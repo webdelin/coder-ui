@@ -4,9 +4,10 @@ const toast = useToast()
 const saving = ref(false)
 
 const providerList = [
-  { key: 'anthropic' as const, label: 'Claude (Anthropic)', icon: 'i-lucide-brain' },
-  { key: 'minimax' as const, label: 'MiniMax', icon: 'i-lucide-sparkles' },
-  { key: 'zai' as const, label: 'Z.AI (Zhipu)', icon: 'i-lucide-zap' },
+  { key: 'claude-code', label: 'Claude Code (Local CLI)', icon: 'i-lucide-terminal', noApiKey: true },
+  { key: 'anthropic', label: 'Claude API', icon: 'i-lucide-brain', noApiKey: false },
+  { key: 'minimax', label: 'MiniMax', icon: 'i-lucide-sparkles', noApiKey: false },
+  { key: 'zai', label: 'Z.AI (Zhipu)', icon: 'i-lucide-zap', noApiKey: false },
 ]
 
 async function save() {
@@ -40,23 +41,29 @@ async function save() {
         />
       </div>
 
-      <div v-if="settings.providers[provider.key].enabled" class="space-y-3">
-        <UFormField label="API Key">
-          <UInput
-            v-model="settings.providers[provider.key].apiKey"
-            type="password"
-            placeholder="Enter API key..."
-            class="w-full"
-          />
-        </UFormField>
+      <div v-if="settings.providers[provider.key]?.enabled" class="space-y-3">
+        <p v-if="provider.noApiKey" class="text-sm text-muted">
+          Uses locally installed Claude Code CLI. No API key needed here - it uses your existing Claude authentication.
+        </p>
 
-        <UFormField v-if="provider.key === 'minimax'" label="Group ID">
-          <UInput
-            v-model="settings.providers[provider.key].groupId"
-            placeholder="MiniMax Group ID..."
-            class="w-full"
-          />
-        </UFormField>
+        <template v-if="!provider.noApiKey">
+          <UFormField label="API Key">
+            <UInput
+              v-model="settings.providers[provider.key].apiKey"
+              type="password"
+              placeholder="Enter API key..."
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField v-if="provider.key === 'minimax'" label="Group ID">
+            <UInput
+              v-model="settings.providers[provider.key].groupId"
+              placeholder="MiniMax Group ID..."
+              class="w-full"
+            />
+          </UFormField>
+        </template>
       </div>
     </div>
 

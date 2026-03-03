@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-export type ProviderName = 'anthropic' | 'minimax' | 'zai'
+export type ProviderName = 'anthropic' | 'minimax' | 'zai' | 'claude-code'
 
 export interface ProviderConfig {
   apiKey: string
@@ -15,13 +15,14 @@ export interface ModelItem {
 }
 
 export const useSettingsStore = defineStore('settings', () => {
-  const activeProvider = ref<ProviderName>('anthropic')
+  const activeProvider = ref<ProviderName>('claude-code')
   const activeModel = ref<string>('claude-sonnet-4-6')
   const systemPrompt = ref<string>('')
   const ttsEnabled = ref<boolean>(true)
   const ttsVoice = ref<string>('male-qn-qingse')
 
-  const providers = ref<Record<ProviderName, ProviderConfig>>({
+  const providers = ref<Record<string, ProviderConfig>>({
+    'claude-code': { apiKey: '', groupId: '', enabled: true },
     anthropic: { apiKey: '', groupId: '', enabled: true },
     minimax: { apiKey: '', groupId: '', enabled: false },
     zai: { apiKey: '', groupId: '', enabled: false },
