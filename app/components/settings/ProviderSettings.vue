@@ -73,13 +73,11 @@ const speedOptions = [
   { label: '2.0x', value: 2.0 },
 ]
 
-const colorModeIcon = computed(() =>
-  colorMode.value === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun',
-)
-
-function toggleColorMode() {
-  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
-}
+const colorModeOptions = [
+  { label: 'Light', value: 'light', icon: 'i-lucide-sun' },
+  { label: 'Dark', value: 'dark', icon: 'i-lucide-moon' },
+  { label: 'System', value: 'system', icon: 'i-lucide-monitor' },
+]
 
 async function save() {
   saving.value = true
@@ -331,26 +329,23 @@ async function clearAllConversations() {
         Appearance
       </h3>
 
-      <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)] p-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="size-8 rounded-lg bg-[var(--ui-bg-elevated)] flex items-center justify-center">
-              <UIcon :name="colorModeIcon" class="size-4" />
-            </div>
-            <div>
-              <span class="text-sm font-medium">Color Mode</span>
-              <p class="text-xs text-[var(--ui-text-muted)]">
-                Currently: {{ colorMode.value === 'dark' ? 'Dark' : 'Light' }}
-              </p>
-            </div>
+      <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)] p-4 space-y-4">
+        <UFormField label="Color Mode">
+          <div class="flex gap-2">
+            <button
+              v-for="opt in colorModeOptions"
+              :key="opt.value"
+              class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+              :class="colorMode.preference === opt.value
+                ? 'bg-[var(--ui-bg-inverted)] text-[var(--ui-bg)]'
+                : 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-accented)]'"
+              @click="colorMode.preference = opt.value"
+            >
+              <UIcon :name="opt.icon" class="size-3.5" />
+              {{ opt.label }}
+            </button>
           </div>
-          <button
-            class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--ui-bg-elevated)] hover:bg-[var(--ui-bg-accented)] transition-colors"
-            @click="toggleColorMode"
-          >
-            Switch to {{ colorMode.value === 'dark' ? 'Light' : 'Dark' }}
-          </button>
-        </div>
+        </UFormField>
       </div>
     </div>
 

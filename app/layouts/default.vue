@@ -3,7 +3,6 @@ const projectsStore = useProjectsStore()
 const conversationsStore = useConversationsStore()
 const settings = useSettingsStore()
 const router = useRouter()
-const colorMode = useColorMode()
 const showCreateProject = ref(false)
 
 onMounted(async () => {
@@ -24,13 +23,6 @@ async function newChat() {
   router.push(`/chat/${conv.id}`)
 }
 
-function toggleColorMode() {
-  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
-}
-
-const colorModeIcon = computed(() =>
-  colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon',
-)
 </script>
 
 <template>
@@ -92,17 +84,6 @@ const colorModeIcon = computed(() =>
 
       <template #footer="{ collapsed }">
         <div class="flex flex-col gap-0.5">
-          <UButton
-            :label="collapsed ? undefined : 'Toggle Theme'"
-            :icon="colorModeIcon"
-            variant="ghost"
-            color="neutral"
-            block
-            :square="collapsed"
-            size="sm"
-            class="justify-start"
-            @click="toggleColorMode"
-          />
           <UButton
             :label="collapsed ? undefined : 'Settings'"
             icon="i-lucide-settings"
