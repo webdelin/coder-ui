@@ -22,7 +22,7 @@ const displayMessages = computed(() => {
       return {
         id: m.id,
         role: 'assistant' as const,
-        parts: [{ type: 'text' as const, text }],
+        text,
         toolCalls,
         isClaudeCode: true,
       }
@@ -31,7 +31,7 @@ const displayMessages = computed(() => {
     return {
       id: m.id,
       role: m.role as 'user' | 'assistant',
-      parts: [{ type: 'text' as const, text: m.content }],
+      text: m.content,
       toolCalls: [] as any[],
       isClaudeCode: false,
     }
@@ -42,7 +42,7 @@ const displayMessages = computed(() => {
     msgs.push({
       id: 'streaming',
       role: 'assistant',
-      parts: [{ type: 'text', text: chat.streamingContent }],
+      text: chat.streamingContent,
       toolCalls: chat.toolCalls,
       isClaudeCode: settings.activeProvider === 'claude-code',
     })
@@ -51,65 +51,95 @@ const displayMessages = computed(() => {
   return msgs
 })
 
-const status = computed(() =>
-  chat.isStreaming ? 'streaming' : 'ready',
-)
+// Thinking phrases like claude-code-web
+const thinkingPhrases = [
+  'Thinking...', 'Pondering...', 'Processing...', 'Analyzing...',
+  'Reflecting...', 'Evaluating...', 'Considering...', 'Reasoning...',
+]
+const thinkingPhrase = ref(thinkingPhrases[0])
+let phraseInterval: ReturnType<typeof setInterval> | undefined
+
+watch(() => chat.isStreaming, (streaming) => {
+  if (streaming) {
+    thinkingPhrase.value = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)]
+    phraseInterval = setInterval(() => {
+      thinkingPhrase.value = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)]
+    }, 3000)
+  } else if (phraseInterval) {
+    clearInterval(phraseInterval)
+  }
+})
+
+onUnmounted(() => {
+  if (phraseInterval) clearInterval(phraseInterval)
+})
 </script>
 
 <template>
-  <UChatMessages
-    :messages="displayMessages"
-    :status="status"
-    :assistant="{ icon: settings.activeProvider === 'claude-code' ? 'i-lucide-terminal' : 'i-lucide-bot' }"
-  >
-    <template #content="{ message }">
-      <!-- Tool calls (Claude Code) -->
-      <template v-if="message.isClaudeCode && message.toolCalls?.length">
-        <ChatToolCallDisplay
-          v-for="(tc, i) in message.toolCalls"
-          :key="`${message.id}-tool-${i}`"
-          :name="tc.name"
-          :input="tc.input"
-          :result="tc.result"
-          :status="tc.status || 'done'"
-        />
-      </template>
+  <div class="space-y-4">
+    <!-- Messages -->
+    <div
+      v-for="message in displayMessages"
+      :key="message.id"
+      class="flex w-full"
+      :class="message.role === 'user' ? 'justify-end' : 'justify-start'"
+    >
+      <!-- User message -->
+      <div v-if="message.role === 'user'" class="message-bubble user-bubble">
+        <p class="whitespace-pre-wrap text-sm">{{ message.text }}</p>
+      </div>
 
-      <!-- Text content -->
-      <template
-        v-for="(part, index) in message.parts"
-        :key="`${message.id}-${part.type}-${index}`"
-      >
+      <!-- Assistant message -->
+      <div v-else class="message-bubble assistant-bubble mb-8">
+        <!-- Tool calls -->
+        <template v-if="message.isClaudeCode && message.toolCalls?.length">
+          <ChatToolCallDisplay
+            v-for="(tc, i) in message.toolCalls"
+            :key="`${message.id}-tool-${i}`"
+            :name="tc.name"
+            :input="tc.input"
+            :result="tc.result"
+            :status="tc.status || 'done'"
+          />
+        </template>
+
+        <!-- Text content -->
         <MDC
-          v-if="part.type === 'text' && part.text && message.role === 'assistant'"
-          :value="part.text"
-          :cache-key="`${message.id}-${index}`"
-          class="*:first:mt-0 *:last:mb-0"
+          v-if="message.text"
+          :value="message.text"
+          :cache-key="`${message.id}`"
+          class="prose prose-sm dark:prose-invert max-w-none *:first:mt-0 *:last:mb-0"
         />
-        <p
-          v-else-if="part.type === 'text' && message.role === 'user'"
-          class="whitespace-pre-wrap"
+
+        <!-- Thinking indicator while streaming with no content yet -->
+        <div
+          v-if="message.id === 'streaming' && !message.text && !message.toolCalls?.length"
+          class="thinking-indicator"
         >
-          {{ part.text }}
-        </p>
-      </template>
-    </template>
+          <span class="text-sm text-[var(--ui-text-muted)]">{{ thinkingPhrase }}</span>
+          <span class="thinking-dots">
+            <span /><span /><span />
+          </span>
+        </div>
 
-    <template #actions="{ message }">
-      <ChatMessageActions
-        v-if="message.role === 'assistant' && message.id !== 'streaming'"
-        :message-id="message.id"
-        :content="message.parts[0]?.text ?? ''"
-      />
-    </template>
-  </UChatMessages>
+        <!-- Action bar (hover) -->
+        <div v-if="message.id !== 'streaming'" class="message-action-bar">
+          <ChatMessageActions
+            :message-id="message.id"
+            :content="message.text ?? ''"
+          />
+        </div>
+      </div>
+    </div>
 
-  <div v-if="chat.error" class="px-4 py-2">
-    <UAlert
-      color="error"
-      variant="subtle"
-      :title="chat.error"
-      icon="i-lucide-alert-circle"
-    />
+    <!-- Error -->
+    <div v-if="chat.error" class="py-2">
+      <div class="message-bubble bg-[var(--ui-color-error)]/10 text-[var(--ui-color-error)] max-w-full">
+        <div class="flex items-center gap-2 text-sm">
+          <UIcon name="i-lucide-alert-circle" class="size-4 shrink-0" />
+          {{ chat.error }}
+        </div>
+      </div>
+    </div>
   </div>
 </template>

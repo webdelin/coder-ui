@@ -4,14 +4,10 @@ definePageMeta({ layout: 'default' })
 
 <template>
   <UDashboardPanel>
-    <template #header>
-      <UDashboardNavbar title="Settings" />
-    </template>
-
     <template #body>
-      <UContainer class="py-6 max-w-2xl">
+      <div class="chat-max-w px-4 py-8">
         <SettingsProviderSettings />
-      </UContainer>
+      </div>
     </template>
   </UDashboardPanel>
 </template>

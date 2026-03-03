@@ -12,36 +12,35 @@ async function deleteConversation(id: string) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-1">
+  <nav class="space-y-0.5 overflow-y-auto max-h-[calc(100vh-16rem)] scrollbar-thin">
     <div
       v-for="conv in conversationsStore.list"
       :key="conv.id"
-      class="group flex items-center gap-1"
+      class="group flex items-center"
     >
-      <UButton
-        :label="conv.title"
+      <NuxtLink
         :to="`/chat/${conv.id}`"
-        variant="ghost"
-        color="neutral"
-        class="flex-1 justify-start truncate"
-        :class="{ 'bg-elevated': route.params.id === conv.id }"
-        size="sm"
-      />
-      <UButton
-        icon="i-lucide-trash-2"
-        size="xs"
-        variant="ghost"
-        color="error"
-        class="opacity-0 group-hover:opacity-100 shrink-0"
+        class="flex-1 flex items-center gap-2 px-2 py-1.5 rounded-md text-sm truncate transition-colors"
+        :class="route.params.id === conv.id
+          ? 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text-highlighted)]'
+          : 'text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text-highlighted)]'"
+      >
+        <UIcon name="i-lucide-message-square" class="size-4 shrink-0" />
+        <span class="truncate">{{ conv.title }}</span>
+      </NuxtLink>
+      <button
+        class="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity text-[var(--ui-text-muted)] hover:text-[var(--ui-color-error)] shrink-0"
         @click.prevent="deleteConversation(conv.id)"
-      />
+      >
+        <UIcon name="i-lucide-trash-2" class="size-3.5" />
+      </button>
     </div>
 
     <p
       v-if="!conversationsStore.list.length && !conversationsStore.loading"
-      class="text-sm text-muted px-2 py-4 text-center"
+      class="text-xs text-[var(--ui-text-muted)] px-2 py-6 text-center"
     >
       No conversations yet
     </p>
-  </div>
+  </nav>
 </template>

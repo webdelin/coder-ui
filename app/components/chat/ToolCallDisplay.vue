@@ -28,21 +28,21 @@ const toolIcon = computed(() => {
 const summary = computed(() => {
   switch (props.name) {
     case 'Bash':
-      return props.input.command as string || 'Running command...'
+      return (props.input.command as string) || 'Running command...'
     case 'Edit':
-      return `Edit ${(props.input.file_path as string) || 'file'}`
+      return (props.input.file_path as string) || 'file'
     case 'Read':
-      return `Read ${(props.input.file_path as string) || 'file'}`
+      return (props.input.file_path as string) || 'file'
     case 'Write':
-      return `Write ${(props.input.file_path as string) || 'file'}`
+      return (props.input.file_path as string) || 'file'
     case 'Glob':
-      return `Search: ${props.input.pattern || ''}`
+      return (props.input.pattern as string) || ''
     case 'Grep':
-      return `Grep: ${props.input.pattern || ''}`
+      return (props.input.pattern as string) || ''
     case 'WebFetch':
-      return `Fetch: ${props.input.url || ''}`
+      return (props.input.url as string) || ''
     case 'WebSearch':
-      return `Search: ${props.input.query || ''}`
+      return (props.input.query as string) || ''
     case 'TodoWrite':
       return 'Update todo list'
     default:
@@ -59,47 +59,62 @@ const truncatedResult = computed(() => {
 </script>
 
 <template>
-  <div class="border border-default rounded-lg overflow-hidden my-2">
+  <div class="tool-call-card bg-[var(--ui-bg-elevated)] mb-3">
+    <!-- Header -->
     <button
-      class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-elevated transition-colors text-left"
+      class="tool-call-header w-full"
       @click="expanded = !expanded"
     >
-      <UIcon :name="toolIcon" class="size-4 shrink-0" />
-      <span class="font-mono text-xs font-medium text-primary">{{ name }}</span>
-      <span class="truncate text-muted">{{ summary }}</span>
-      <UIcon
-        v-if="status === 'running'"
-        name="i-lucide-loader"
-        class="size-4 shrink-0 ml-auto animate-spin text-primary"
+      <!-- Status dot -->
+      <div
+        class="status-dot"
+        :class="status === 'running' ? 'status-dot-running' : 'status-dot-done'"
       />
+
+      <!-- Tool name badge -->
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono bg-[var(--ui-bg)] text-[var(--ui-text-highlighted)] shrink-0">
+        {{ name }}
+      </span>
+
+      <!-- Description -->
+      <span class="text-xs text-[var(--ui-text-muted)] flex-1 min-w-0 truncate text-left">
+        {{ summary }}
+      </span>
+
+      <!-- Chevron -->
       <UIcon
-        v-else
-        name="i-lucide-check"
-        class="size-4 shrink-0 ml-auto text-success"
-      />
-      <UIcon
-        :name="expanded ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-        class="size-4 shrink-0"
+        :name="expanded ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+        class="size-3.5 shrink-0 text-[var(--ui-text-muted)] transition-transform duration-200"
       />
     </button>
 
-    <div v-if="expanded" class="border-t border-default">
-      <!-- Input -->
-      <div v-if="name === 'Bash' && input.command" class="px-3 py-2 bg-elevated">
-        <pre class="text-xs font-mono whitespace-pre-wrap break-all">$ {{ input.command }}</pre>
-      </div>
-      <div v-else-if="name === 'Edit'" class="px-3 py-2 bg-elevated text-xs space-y-1">
-        <div class="font-mono text-muted">{{ input.file_path }}</div>
-        <div v-if="input.old_string" class="text-error line-through">{{ input.old_string }}</div>
-        <div v-if="input.new_string" class="text-success">{{ input.new_string }}</div>
-      </div>
-      <div v-else class="px-3 py-2 bg-elevated">
-        <pre class="text-xs font-mono whitespace-pre-wrap break-all">{{ JSON.stringify(input, null, 2) }}</pre>
+    <!-- Expandable content -->
+    <div v-if="expanded" class="tool-call-content space-y-3 border-t border-[var(--ui-border)]">
+      <!-- Input section -->
+      <div>
+        <h4 class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wide mb-1.5">
+          {{ name === 'Bash' ? 'Command' : 'Input' }}
+        </h4>
+        <div class="bg-[var(--ui-bg)] rounded border border-[var(--ui-border)] p-3">
+          <!-- Bash -->
+          <pre v-if="name === 'Bash' && input.command" class="text-xs text-[var(--ui-text-highlighted)]">$ {{ input.command }}</pre>
+          <!-- Edit -->
+          <div v-else-if="name === 'Edit'" class="space-y-2">
+            <div class="text-xs font-mono text-[var(--ui-text-muted)]">{{ input.file_path }}</div>
+            <div v-if="input.old_string" class="text-xs font-mono text-red-500 line-through whitespace-pre-wrap">{{ input.old_string }}</div>
+            <div v-if="input.new_string" class="text-xs font-mono text-green-500 whitespace-pre-wrap">{{ input.new_string }}</div>
+          </div>
+          <!-- Default -->
+          <pre v-else class="text-xs text-[var(--ui-text-highlighted)]">{{ JSON.stringify(input, null, 2) }}</pre>
+        </div>
       </div>
 
-      <!-- Result -->
-      <div v-if="result" class="px-3 py-2 border-t border-default">
-        <pre class="text-xs font-mono whitespace-pre-wrap break-all text-muted max-h-60 overflow-auto">{{ truncatedResult }}</pre>
+      <!-- Result section -->
+      <div v-if="result">
+        <h4 class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wide mb-1.5">Result</h4>
+        <div class="bg-[var(--ui-bg)] rounded border border-[var(--ui-border)] p-3 max-h-48 overflow-y-auto scrollbar-thin">
+          <pre class="text-xs text-[var(--ui-text-highlighted)]">{{ truncatedResult }}</pre>
+        </div>
       </div>
     </div>
   </div>

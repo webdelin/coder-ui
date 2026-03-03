@@ -1,2 +1,188 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/* ============================================
+   Coder UI — claude-code-web inspired theme
+   Monochromatic OKLCH color scheme
+   ============================================ */
+
+:root {
+  /* Sidebar dimensions */
+  --sidebar-width: 16rem;
+  --sidebar-width-collapsed: 3.6rem;
+  --header-height: 56px;
+
+  /* Root typography — slightly larger like claude-code-web */
+  font-size: 1.05rem;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---- Chat bubble styling ---- */
+.message-bubble {
+  border-radius: 1.2rem;
+  max-width: 85%;
+  padding: 0.75rem 1rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  position: relative;
+}
+
+.user-bubble {
+  background: var(--ui-bg-inverted);
+  color: var(--ui-bg);
+}
+
+.assistant-bubble {
+  background: var(--ui-bg-elevated);
+}
+
+/* ---- Tool call cards ---- */
+.tool-call-card {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+
+.tool-call-header {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  transition: background-color 0.15s;
+  overflow: hidden;
+}
+
+.tool-call-header:hover {
+  opacity: 0.8;
+}
+
+.tool-call-content {
+  padding: 0 1rem 1rem;
+}
+
+.tool-call-content pre {
+  font-size: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Status dot */
+.status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.status-dot-running {
+  background: var(--ui-color-info);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.status-dot-done {
+  background: var(--ui-color-success);
+}
+
+.status-dot-error {
+  background: var(--ui-color-error);
+}
+
+/* ---- Chat input area ---- */
+.chat-input-area {
+  background: var(--ui-bg);
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+/* ---- Thinking indicator ---- */
+.thinking-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--ui-bg-elevated);
+  opacity: 0.7;
+}
+
+.thinking-dots span {
+  display: inline-block;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--ui-text-muted);
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
+.thinking-dots span:nth-child(2) { animation-delay: -0.16s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+/* ---- Message action bar ---- */
+.message-action-bar {
+  position: absolute;
+  right: 0;
+  bottom: -2.25rem;
+  display: flex;
+  gap: 0.125rem;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  z-index: 10;
+}
+
+.message-bubble:hover .message-action-bar,
+.message-action-bar:hover {
+  opacity: 1;
+}
+
+/* ---- Code blocks inside markdown ---- */
+.prose pre {
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.prose code:not(pre code) {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  background: var(--ui-bg-elevated);
+}
+
+/* ---- Scrollbar styling ---- */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--ui-border);
+  border-radius: 3px;
+}
+
+/* ---- Utility: max-w for chat ---- */
+.chat-max-w {
+  max-width: 48rem;
+  margin-left: auto;
+  margin-right: auto;
+}

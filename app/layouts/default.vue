@@ -34,12 +34,22 @@ const colorModeIcon = computed(() =>
     <UDashboardSidebar
       collapsible
       resizable
-      :ui="{ footer: 'border-t border-default' }"
+      :ui="{
+        root: 'bg-[var(--ui-bg-muted)]',
+        header: 'border-b-0',
+        body: 'p-2',
+        footer: 'border-t border-[var(--ui-border)] p-2',
+      }"
     >
       <template #header="{ collapsed }">
-        <div class="flex items-center gap-2">
-          <UIcon name="i-lucide-bot" class="size-5 text-primary" />
-          <span v-if="!collapsed" class="font-semibold truncate">Coder UI</span>
+        <div class="flex items-center gap-2.5">
+          <div class="size-8 rounded-lg bg-[var(--ui-bg-elevated)] flex items-center justify-center flex-shrink-0">
+            <UIcon name="i-lucide-terminal" class="size-4" />
+          </div>
+          <div v-if="!collapsed" class="flex flex-col min-w-0">
+            <span class="font-semibold text-sm truncate">Coder UI</span>
+            <span class="text-xs text-[var(--ui-text-muted)]">Web UI</span>
+          </div>
         </div>
       </template>
 
@@ -50,20 +60,28 @@ const colorModeIcon = computed(() =>
           color="primary"
           block
           :square="collapsed"
+          class="mb-2"
           @click="newChat"
         />
 
-        <ChatSidebar v-if="!collapsed" />
+        <div v-if="!collapsed" class="mt-1">
+          <div class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wider mb-2 px-2">
+            Conversations
+          </div>
+          <ChatSidebar />
+        </div>
       </template>
 
       <template #footer="{ collapsed }">
-        <div class="flex flex-col gap-1">
+        <div class="flex flex-col gap-0.5">
           <UButton
-            :label="collapsed ? undefined : undefined"
+            :label="collapsed ? undefined : 'Toggle Theme'"
             :icon="colorModeIcon"
             variant="ghost"
             color="neutral"
+            block
             :square="collapsed"
+            size="sm"
             @click="toggleColorMode"
           />
           <UButton
@@ -74,6 +92,7 @@ const colorModeIcon = computed(() =>
             to="/settings"
             block
             :square="collapsed"
+            size="sm"
           />
         </div>
       </template>

@@ -20,15 +20,21 @@ onUnmounted(() => chat.clearConversation())
 <template>
   <UDashboardPanel>
     <template #body>
-      <UContainer>
-        <ChatMessages />
-      </UContainer>
-    </template>
+      <div class="flex flex-col h-full">
+        <!-- Messages area (scrollable) -->
+        <div class="flex-1 overflow-y-auto scrollbar-thin">
+          <div class="chat-max-w px-4 py-6">
+            <ChatMessages />
+          </div>
+        </div>
 
-    <template #footer>
-      <UContainer class="pb-4 sm:pb-6">
-        <ChatInput />
-      </UContainer>
+        <!-- Input area (sticky bottom) -->
+        <div class="chat-input-area border-t border-[var(--ui-border)]">
+          <div class="chat-max-w px-4 py-3">
+            <ChatInput />
+          </div>
+        </div>
+      </div>
     </template>
   </UDashboardPanel>
 </template>
