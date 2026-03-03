@@ -5,7 +5,7 @@ const input = ref('')
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
 const modelSelectItems = computed(() =>
-  settings.allModels.map(m => ({
+  settings.availableModels.map(m => ({
     label: m.label,
     value: `${m.provider}::${m.id}`,
   })),

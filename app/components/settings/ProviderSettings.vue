@@ -14,6 +14,7 @@ async function save() {
   saving.value = true
   try {
     await settings.saveToServer()
+    await settings.fetchModels()
     toast.add({ title: 'Settings saved', color: 'success' })
   } catch (e: any) {
     toast.add({ title: 'Failed to save', description: e.message, color: 'error' })

@@ -30,8 +30,12 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const allModels = ref<ModelItem[]>([])
 
+  const availableModels = computed(() =>
+    allModels.value.filter(m => providers.value[m.provider]?.enabled),
+  )
+
   const modelsForCurrentProvider = computed(() =>
-    allModels.value.filter(m => m.provider === activeProvider.value),
+    availableModels.value.filter(m => m.provider === activeProvider.value),
   )
 
   async function fetchModels() {
@@ -101,6 +105,7 @@ export const useSettingsStore = defineStore('settings', () => {
     ttsVoice,
     providers,
     allModels,
+    availableModels,
     modelsForCurrentProvider,
     fetchModels,
     loadFromServer,
