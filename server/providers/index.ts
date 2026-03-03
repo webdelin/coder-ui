@@ -1,7 +1,7 @@
 import { anthropicAdapter } from './anthropic'
 import { minimaxAdapter } from './minimax'
 import { zaiAdapter } from './zai'
-import { models as claudeCodeModels } from './claude-code'
+import { fallbackModels as claudeCodeFallbackModels } from './claude-code'
 import type { ProviderAdapter, ModelDef } from './types'
 
 export type ProviderName = 'anthropic' | 'minimax' | 'zai' | 'claude-code'
@@ -21,17 +21,81 @@ export function getProvider(name: ProviderName): ProviderAdapter {
   return p
 }
 
-export function getAllProviderModels(): Array<{
+export interface ProviderModels {
   provider: ProviderName
   providerLabel: string
   models: ModelDef[]
-}> {
-  return [
-    { provider: 'claude-code', providerLabel: 'Claude Code', models: claudeCodeModels },
-    { provider: 'anthropic', providerLabel: 'Claude API', models: anthropicAdapter.models },
-    { provider: 'minimax', providerLabel: 'MiniMax', models: minimaxAdapter.models },
-    { provider: 'zai', providerLabel: 'Z.AI (Zhipu)', models: zaiAdapter.models },
-  ]
+}
+
+const providerLabels: Record<ProviderName, string> = {
+  'claude-code': 'Claude Code',
+  anthropic: 'Claude API',
+  minimax: 'MiniMax',
+  zai: 'Z.AI (Zhipu)',
+}
+
+/**
+ * Fetch models dynamically from provider APIs.
+ * Falls back to hardcoded models if no API key or API call fails.
+ */
+export async function fetchAllProviderModels(
+  apiKeys: Partial<Record<ProviderName, string>>,
+): Promise<ProviderModels[]> {
+  const results: ProviderModels[] = []
+
+  // Claude Code uses same models as Anthropic API
+  const anthropicKey = apiKeys.anthropic
+  if (anthropicKey) {
+    try {
+      const models = await anthropicAdapter.listModels(anthropicKey)
+      results.push({
+        provider: 'claude-code',
+        providerLabel: providerLabels['claude-code'],
+        models: models.map(m => ({ id: m.id, label: `Claude Code ${m.label}` })),
+      })
+    } catch {
+      results.push({
+        provider: 'claude-code',
+        providerLabel: providerLabels['claude-code'],
+        models: claudeCodeFallbackModels,
+      })
+    }
+  } else {
+    results.push({
+      provider: 'claude-code',
+      providerLabel: providerLabels['claude-code'],
+      models: claudeCodeFallbackModels,
+    })
+  }
+
+  // Regular providers
+  for (const [name, adapter] of Object.entries(registry) as [Exclude<ProviderName, 'claude-code'>, ProviderAdapter][]) {
+    const key = apiKeys[name]
+    if (key) {
+      try {
+        const models = await adapter.listModels(key)
+        results.push({
+          provider: name,
+          providerLabel: providerLabels[name],
+          models,
+        })
+      } catch {
+        results.push({
+          provider: name,
+          providerLabel: providerLabels[name],
+          models: adapter.fallbackModels,
+        })
+      }
+    } else {
+      results.push({
+        provider: name,
+        providerLabel: providerLabels[name],
+        models: adapter.fallbackModels,
+      })
+    }
+  }
+
+  return results
 }
 
 export type { ProviderAdapter, ModelDef } from './types'

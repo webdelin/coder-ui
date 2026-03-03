@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { ProviderAdapter, StreamRequest, StreamChunk, ModelDef } from './types'
 
-export const models: ModelDef[] = [
+export const fallbackModels: ModelDef[] = [
   { id: 'claude-opus-4-6', label: 'Claude Opus 4.6' },
   { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
   { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
@@ -9,7 +9,21 @@ export const models: ModelDef[] = [
 
 export const anthropicAdapter: ProviderAdapter = {
   name: 'anthropic',
-  models,
+  fallbackModels,
+
+  async listModels(apiKey: string): Promise<ModelDef[]> {
+    const client = new Anthropic({ apiKey })
+    const response = await client.models.list({ limit: 100 })
+    const models: ModelDef[] = []
+    for (const model of response.data) {
+      models.push({
+        id: model.id,
+        label: model.display_name || model.id,
+      })
+    }
+    models.sort((a, b) => b.id.localeCompare(a.id))
+    return models
+  },
 
   async *stream(req: StreamRequest, apiKey: string): AsyncGenerator<StreamChunk> {
     const client = new Anthropic({ apiKey })

@@ -1,7 +1,7 @@
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import type { ModelDef } from './types'
 
-export const models: ModelDef[] = [
+export const fallbackModels: ModelDef[] = [
   { id: 'claude-opus-4-6', label: 'Claude Code Opus 4.6' },
   { id: 'claude-sonnet-4-6', label: 'Claude Code Sonnet 4.6' },
   { id: 'claude-haiku-4-5-20251001', label: 'Claude Code Haiku 4.5' },

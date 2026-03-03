@@ -1,21 +1,34 @@
 import OpenAI from 'openai'
 import type { ProviderAdapter, StreamRequest, StreamChunk, ModelDef } from './types'
 
-export const models: ModelDef[] = [
+export const fallbackModels: ModelDef[] = [
   { id: 'glm-4.7', label: 'GLM-4.7' },
   { id: 'glm-4.6', label: 'GLM-4.6' },
   { id: 'glm-4.5-flash', label: 'GLM-4.5 Flash (Free)' },
 ]
 
+const BASE_URL = 'https://api.z.ai/api/paas/v4'
+
 export const zaiAdapter: ProviderAdapter = {
   name: 'zai',
-  models,
+  fallbackModels,
+
+  async listModels(apiKey: string): Promise<ModelDef[]> {
+    const client = new OpenAI({ apiKey, baseURL: BASE_URL })
+    const response = await client.models.list()
+    const models: ModelDef[] = []
+    for await (const model of response) {
+      models.push({
+        id: model.id,
+        label: model.id,
+      })
+    }
+    models.sort((a, b) => a.id.localeCompare(b.id))
+    return models
+  },
 
   async *stream(req: StreamRequest, apiKey: string): AsyncGenerator<StreamChunk> {
-    const client = new OpenAI({
-      apiKey,
-      baseURL: 'https://api.z.ai/api/paas/v4',
-    })
+    const client = new OpenAI({ apiKey, baseURL: BASE_URL })
 
     const messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> =
       req.messages.map(m => ({

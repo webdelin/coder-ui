@@ -18,7 +18,8 @@ export type StreamChunk =
 
 export interface ProviderAdapter {
   readonly name: string
-  readonly models: ModelDef[]
+  readonly fallbackModels: ModelDef[]
+  listModels(apiKey: string): Promise<ModelDef[]>
   stream(
     req: StreamRequest,
     apiKey: string,

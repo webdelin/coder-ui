@@ -1,7 +1,7 @@
 import OpenAI from 'openai'
 import type { ProviderAdapter, StreamRequest, StreamChunk, ModelDef } from './types'
 
-export const models: ModelDef[] = [
+export const fallbackModels: ModelDef[] = [
   { id: 'MiniMax-M2.5', label: 'MiniMax M2.5' },
   { id: 'MiniMax-M2.5-highspeed', label: 'MiniMax M2.5 Highspeed' },
   { id: 'MiniMax-M2.1', label: 'MiniMax M2.1' },
@@ -9,15 +9,28 @@ export const models: ModelDef[] = [
   { id: 'MiniMax-M2', label: 'MiniMax M2' },
 ]
 
+const BASE_URL = 'https://api.minimax.io/v1'
+
 export const minimaxAdapter: ProviderAdapter = {
   name: 'minimax',
-  models,
+  fallbackModels,
+
+  async listModels(apiKey: string): Promise<ModelDef[]> {
+    const client = new OpenAI({ apiKey, baseURL: BASE_URL })
+    const response = await client.models.list()
+    const models: ModelDef[] = []
+    for await (const model of response) {
+      models.push({
+        id: model.id,
+        label: model.id,
+      })
+    }
+    models.sort((a, b) => a.id.localeCompare(b.id))
+    return models
+  },
 
   async *stream(req: StreamRequest, apiKey: string): AsyncGenerator<StreamChunk> {
-    const client = new OpenAI({
-      apiKey,
-      baseURL: 'https://api.minimax.io/v1',
-    })
+    const client = new OpenAI({ apiKey, baseURL: BASE_URL })
 
     const messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> =
       req.messages.map(m => ({
