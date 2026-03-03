@@ -1,3 +1,4 @@
+import { join } from 'node:path'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import type { ModelDef } from './types'
 
@@ -55,6 +56,8 @@ export async function* streamClaudeCode(
       ...(opts.systemPrompt ? { systemPrompt: opts.systemPrompt } : {}),
       ...(opts.sessionId ? { resume: opts.sessionId } : {}),
       allowDangerouslySkipPermissions: opts.permissionMode === 'bypassPermissions',
+      // Inject fetch patch to remove empty text blocks (SDK bug workaround)
+      executableArgs: ['--require', join(process.cwd(), 'server/utils/patch-empty-blocks.cjs')],
     },
   })
 

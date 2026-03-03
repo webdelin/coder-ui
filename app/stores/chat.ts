@@ -50,7 +50,10 @@ export const useChatStore = defineStore('chat', () => {
     const projectsStore = useProjectsStore()
     const data = await $fetch<any>(`/api/conversations/${id}`)
     conversationId.value = id
-    messages.value = data.messages
+    messages.value = data.messages.map((m: any) => ({
+      ...m,
+      images: m.images ? JSON.parse(m.images) : undefined,
+    }))
     streamingContent.value = ''
     error.value = null
     toolCalls.value = []
@@ -110,7 +113,7 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       if (isClaudeCode) {
-        await streamClaudeCode(content, controller)
+        await streamClaudeCode(content, controller, imageBlocks)
       } else {
         await streamRegularProvider(content, controller, imageBlocks)
       }
@@ -194,7 +197,7 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function streamClaudeCode(content: string, controller: AbortController) {
+  async function streamClaudeCode(content: string, controller: AbortController, images?: Array<{ mediaType: string; data: string }>) {
     const projectsStore = useProjectsStore()
     const cwd = projectsStore.activeProject?.path || undefined
 
@@ -210,6 +213,7 @@ export const useChatStore = defineStore('chat', () => {
         permissionMode: 'acceptEdits',
         sessionId: claudeSessionId.value || undefined,
         cwd,
+        images: images?.length ? images : undefined,
       }),
     })
 

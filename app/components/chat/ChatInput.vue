@@ -127,9 +127,12 @@ function onInterim(text: string) {
   interimText.value = text
 }
 
-// Drag and drop
+// Drag and drop (counter approach to handle child element enter/leave)
+let dragCounter = 0
+
 function onDragEnter(e: DragEvent) {
   e.preventDefault()
+  dragCounter++
   isDragging.value = true
 }
 function onDragOver(e: DragEvent) {
@@ -137,10 +140,15 @@ function onDragOver(e: DragEvent) {
 }
 function onDragLeave(e: DragEvent) {
   e.preventDefault()
-  isDragging.value = false
+  dragCounter--
+  if (dragCounter <= 0) {
+    dragCounter = 0
+    isDragging.value = false
+  }
 }
 function onDrop(e: DragEvent) {
   e.preventDefault()
+  dragCounter = 0
   isDragging.value = false
   if (e.dataTransfer?.files.length) {
     processFiles(e.dataTransfer.files)
@@ -159,7 +167,7 @@ function onDrop(e: DragEvent) {
     <!-- Drag overlay -->
     <div
       v-if="isDragging"
-      class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border-2 border-dashed border-[var(--ui-border-active)] bg-[var(--ui-bg-elevated)]/80 backdrop-blur-sm"
+      class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border-2 border-dashed border-[var(--ui-border-active)] bg-[var(--ui-bg-elevated)]/80 backdrop-blur-sm pointer-events-none"
     >
       <div class="text-center">
         <UIcon name="i-lucide-plus" class="size-8 text-[var(--ui-text-muted)] mx-auto mb-1" />

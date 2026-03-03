@@ -3,6 +3,8 @@ import { db } from '../../db'
 import { messages, providerSettings, conversations } from '../../db/schema'
 import { getProvider } from '../../providers'
 import type { ProviderName } from '../../providers'
+import { autoIndexMemories } from '../../utils/memory-indexer'
+import { searchMemories } from '../../utils/memory-store'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{
@@ -22,7 +24,6 @@ export default defineEventHandler(async (event) => {
     .where(eq(providerSettings.provider, body.provider))
 
   const envKeyMap: Record<string, string> = {
-    anthropic: 'ANTHROPIC_API_KEY',
     minimax: 'MINIMAX_API_KEY',
     zai: 'ZAI_API_KEY',
   }
@@ -35,13 +36,40 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 2. Save user message to DB
+  // 2. Look up conversation's projectId for memory scoping
+  const [conv] = await db
+    .select({ projectId: conversations.projectId })
+    .from(conversations)
+    .where(eq(conversations.id, body.conversationId))
+
+  // 3. Search for relevant memories to inject into context
+  let memoryContext = ''
+  try {
+    const relevantMemories = await searchMemories(body.content, {
+      projectId: conv?.projectId ?? undefined,
+      conversationId: body.conversationId,
+      limit: 5,
+    })
+    if (relevantMemories.length > 0) {
+      memoryContext = '\n\n<relevant_memories>\n'
+        + relevantMemories.map(m => `- ${m.content}`).join('\n')
+        + '\n</relevant_memories>'
+    }
+  } catch {
+    // Don't block chat if memory search fails
+  }
+
+  // 4. Save user message to DB
   const userMsgId = crypto.randomUUID()
+  // Build data URLs for DB storage
+  const imageDataUrls = body.images?.map(img => `data:${img.mediaType};base64,${img.data}`)
+
   await db.insert(messages).values({
     id: userMsgId,
     conversationId: body.conversationId,
     role: 'user',
     content: body.content,
+    images: imageDataUrls?.length ? JSON.stringify(imageDataUrls) : null,
     provider: body.provider,
     model: body.model,
   })
@@ -74,10 +102,12 @@ export default defineEventHandler(async (event) => {
   }))
 
   const chatMessages = [
-    ...body.history.map(m => ({
-      role: m.role as 'user' | 'assistant' | 'system',
-      content: m.content,
-    })),
+    ...body.history
+      .filter(m => m.content)
+      .map(m => ({
+        role: m.role as 'user' | 'assistant' | 'system',
+        content: m.content,
+      })),
     {
       role: 'user' as const,
       content: body.content,
@@ -85,10 +115,12 @@ export default defineEventHandler(async (event) => {
     },
   ]
 
+  const effectiveSystemPrompt = (body.systemPrompt || '') + memoryContext || undefined
+
   const stream = provider.stream(
     {
       messages: chatMessages,
-      systemPrompt: body.systemPrompt,
+      systemPrompt: effectiveSystemPrompt,
       model: body.model,
     },
     apiKey,
@@ -120,6 +152,15 @@ export default defineEventHandler(async (event) => {
             messageId: assistantMsgId,
             tokensUsed: chunk.tokensUsed,
           }))
+
+          // Auto-index memories (fire-and-forget)
+          autoIndexMemories({
+            projectId: conv?.projectId,
+            conversationId: body.conversationId,
+            userMessage: body.content,
+            assistantResponse: fullText,
+            assistantMessageId: assistantMsgId,
+          }).catch(() => {})
         }
         if (chunk.type === 'error') {
           await eventStream.push(JSON.stringify({

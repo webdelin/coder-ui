@@ -157,4 +157,14 @@ export default {
 
   // Speed options
   'speed.normal': '1.0x (Normal)',
+
+  // Memory
+  'memory.title': 'Memories',
+  'memory.count': '{n} memories',
+  'memory.empty': 'No memories yet. Memories are created automatically from conversations.',
+  'memory.add': 'Add',
+  'memory.addPlaceholder': 'Add a memory...',
+  'memory.delete': 'Delete memory',
+  'memory.type.auto': 'Auto',
+  'memory.type.manual': 'Manual',
 } as const

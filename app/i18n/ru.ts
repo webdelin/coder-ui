@@ -157,4 +157,14 @@ export default {
 
   // Speed options
   'speed.normal': '1.0x (обычная)',
+
+  // Memory
+  'memory.title': 'Воспоминания',
+  'memory.count': '{n} воспоминаний',
+  'memory.empty': 'Пока нет воспоминаний. Создаются автоматически из диалогов.',
+  'memory.add': 'Добавить',
+  'memory.addPlaceholder': 'Добавить воспоминание...',
+  'memory.delete': 'Удалить',
+  'memory.type.auto': 'Авто',
+  'memory.type.manual': 'Ручное',
 } as const

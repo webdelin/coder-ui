@@ -1,8 +1,12 @@
+import { writeFile, unlink, mkdir } from 'node:fs/promises'
+import { join } from 'node:path'
 import { eq } from 'drizzle-orm'
 import { db } from '../../db'
 import { messages, conversations } from '../../db/schema'
 import { streamClaudeCode } from '../../providers/claude-code'
 import type { ClaudeCodeOptions } from '../../providers/claude-code'
+import { autoIndexMemories } from '../../utils/memory-indexer'
+import { searchMemories } from '../../utils/memory-store'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{
@@ -14,15 +18,70 @@ export default defineEventHandler(async (event) => {
     permissionMode?: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan'
     sessionId?: string
     maxTurns?: number
+    images?: Array<{ mediaType: string; data: string }>
   }>(event)
 
-  // Save user message to DB
+  // Look up conversation's projectId for memory scoping
+  const [conv] = await db
+    .select({ projectId: conversations.projectId })
+    .from(conversations)
+    .where(eq(conversations.id, body.conversationId))
+
+  // Search for relevant memories
+  let memoryContext = ''
+  try {
+    const relevantMemories = await searchMemories(body.content, {
+      projectId: conv?.projectId ?? undefined,
+      conversationId: body.conversationId,
+      limit: 5,
+    })
+    if (relevantMemories.length > 0) {
+      memoryContext = '\n\n<relevant_memories>\n'
+        + relevantMemories.map(m => `- ${m.content}`).join('\n')
+        + '\n</relevant_memories>'
+    }
+  } catch {
+    // Don't block chat if memory search fails
+  }
+
+  // Save images to temp files so Claude Code can read them
+  const tempImagePaths: string[] = []
+  if (body.images?.length) {
+    const tmpDir = join(body.cwd || process.cwd(), '.claude', 'tmp')
+    await mkdir(tmpDir, { recursive: true })
+
+    for (const img of body.images) {
+      const ext = img.mediaType.split('/')[1] || 'png'
+      const filename = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+      const filepath = join(tmpDir, filename)
+      await writeFile(filepath, Buffer.from(img.data, 'base64'))
+      tempImagePaths.push(filepath)
+    }
+  }
+
+  // Build prompt with image references
+  let prompt = body.content || ''
+  if (tempImagePaths.length) {
+    const imageRefs = tempImagePaths.map(p => `Please analyze this image: ${p}`).join('\n')
+    prompt = prompt.trim()
+      ? `${imageRefs}\n\n${prompt}`
+      : imageRefs
+  }
+  // Ensure prompt is never empty
+  if (!prompt.trim()) {
+    prompt = 'Hello'
+  }
+
+  // Save user message to DB (with images as data URLs)
   const userMsgId = crypto.randomUUID()
+  const imageDataUrls = body.images?.map(img => `data:${img.mediaType};base64,${img.data}`)
+
   await db.insert(messages).values({
     id: userMsgId,
     conversationId: body.conversationId,
     role: 'user',
     content: body.content,
+    images: imageDataUrls?.length ? JSON.stringify(imageDataUrls) : null,
     provider: 'claude-code',
     model: body.model,
   })
@@ -42,16 +101,18 @@ export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-cache')
   setHeader(event, 'Connection', 'keep-alive')
 
+  const effectiveSystemPrompt = (body.systemPrompt || '') + memoryContext || undefined
+
   const opts: ClaudeCodeOptions = {
     cwd: body.cwd || process.cwd(),
     model: body.model,
     permissionMode: body.permissionMode || 'acceptEdits',
-    systemPrompt: body.systemPrompt,
+    systemPrompt: effectiveSystemPrompt,
     sessionId: body.sessionId,
     maxTurns: body.maxTurns || 25,
   }
 
-  const stream = streamClaudeCode(body.content, opts)
+  const stream = streamClaudeCode(prompt, opts)
   const eventStream = createEventStream(event)
 
   const startTime = Date.now()
@@ -64,17 +125,14 @@ export default defineEventHandler(async (event) => {
       for await (const evt of stream) {
         await eventStream.push(JSON.stringify(evt))
 
-        // Track text content for DB persistence
         if (evt.type === 'text' && evt.text) {
           fullText += evt.text
         }
 
-        // Track session ID
         if (evt.type === 'system_init' && evt.sessionId) {
           claudeSessionId = evt.sessionId
         }
 
-        // Track tool calls
         if (evt.type === 'tool_use') {
           toolCalls.push({
             name: evt.toolName!,
@@ -88,13 +146,7 @@ export default defineEventHandler(async (event) => {
           }
         }
 
-        // On done, save assistant message to DB
         if (evt.type === 'done') {
-          // Build rich content with tool calls
-          const contentParts: string[] = []
-          if (fullText) contentParts.push(fullText)
-
-          // Store tool calls as structured JSON
           const richContent = JSON.stringify({
             text: fullText,
             toolCalls,
@@ -113,7 +165,15 @@ export default defineEventHandler(async (event) => {
             durationMs: evt.durationMs ?? (Date.now() - startTime),
           })
 
-          // Update conversation with session ID for resume
+          // Auto-index memories (fire-and-forget)
+          autoIndexMemories({
+            projectId: conv?.projectId,
+            conversationId: body.conversationId,
+            userMessage: body.content,
+            assistantResponse: fullText,
+            assistantMessageId: assistantMsgId,
+          }).catch(() => {})
+
           if (claudeSessionId) {
             await db
               .update(conversations)
@@ -128,6 +188,10 @@ export default defineEventHandler(async (event) => {
         message: err.message ?? 'Unknown error',
       }))
     } finally {
+      // Clean up temp image files
+      for (const p of tempImagePaths) {
+        unlink(p).catch(() => {})
+      }
       await eventStream.close()
     }
   })()

@@ -157,4 +157,14 @@ export default {
 
   // Speed options
   'speed.normal': '1.0x (Normal)',
+
+  // Memory
+  'memory.title': 'Erinnerungen',
+  'memory.count': '{n} Erinnerungen',
+  'memory.empty': 'Noch keine Erinnerungen. Werden automatisch aus Unterhaltungen erstellt.',
+  'memory.add': 'Hinzufugen',
+  'memory.addPlaceholder': 'Erinnerung hinzufugen...',
+  'memory.delete': 'Loschen',
+  'memory.type.auto': 'Auto',
+  'memory.type.manual': 'Manuell',
 } as const

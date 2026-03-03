@@ -1,13 +1,11 @@
-import { anthropicAdapter } from './anthropic'
 import { minimaxAdapter } from './minimax'
 import { zaiAdapter } from './zai'
 import { fallbackModels as claudeCodeFallbackModels } from './claude-code'
 import type { ProviderAdapter, ModelDef } from './types'
 
-export type ProviderName = 'anthropic' | 'minimax' | 'zai' | 'claude-code'
+export type ProviderName = 'minimax' | 'zai' | 'claude-code'
 
 const registry: Record<Exclude<ProviderName, 'claude-code'>, ProviderAdapter> = {
-  anthropic: anthropicAdapter,
   minimax: minimaxAdapter,
   zai: zaiAdapter,
 }
@@ -29,7 +27,6 @@ export interface ProviderModels {
 
 const providerLabels: Record<ProviderName, string> = {
   'claude-code': 'Claude Code',
-  anthropic: 'Claude API',
   minimax: 'MiniMax',
   zai: 'Z.AI (Zhipu)',
 }
@@ -43,30 +40,12 @@ export async function fetchAllProviderModels(
 ): Promise<ProviderModels[]> {
   const results: ProviderModels[] = []
 
-  // Claude Code uses same models as Anthropic API
-  const anthropicKey = apiKeys.anthropic
-  if (anthropicKey) {
-    try {
-      const models = await anthropicAdapter.listModels(anthropicKey)
-      results.push({
-        provider: 'claude-code',
-        providerLabel: providerLabels['claude-code'],
-        models: models.map(m => ({ id: m.id, label: `Claude Code ${m.label}` })),
-      })
-    } catch {
-      results.push({
-        provider: 'claude-code',
-        providerLabel: providerLabels['claude-code'],
-        models: claudeCodeFallbackModels,
-      })
-    }
-  } else {
-    results.push({
-      provider: 'claude-code',
-      providerLabel: providerLabels['claude-code'],
-      models: claudeCodeFallbackModels,
-    })
-  }
+  // Claude Code uses fallback models (no API key needed, uses CLI auth)
+  results.push({
+    provider: 'claude-code',
+    providerLabel: providerLabels['claude-code'],
+    models: claudeCodeFallbackModels,
+  })
 
   // Regular providers
   for (const [name, adapter] of Object.entries(registry) as [Exclude<ProviderName, 'claude-code'>, ProviderAdapter][]) {

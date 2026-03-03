@@ -10,7 +10,6 @@ const showClearConfirm = ref(false)
 
 const providerList = [
   { key: 'claude-code', label: 'Claude Code (Local CLI)', icon: 'i-lucide-terminal', noApiKey: true },
-  { key: 'anthropic', label: 'Claude API', icon: 'i-lucide-brain', noApiKey: false },
   { key: 'minimax', label: 'MiniMax', icon: 'i-lucide-sparkles', noApiKey: false },
   { key: 'zai', label: 'Z.AI (Zhipu)', icon: 'i-lucide-zap', noApiKey: false },
 ]

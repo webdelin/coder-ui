@@ -10,12 +10,67 @@ watch(
   async (id) => {
     if (id) {
       await chat.loadConversation(String(id))
+      // Scroll to bottom when loading a conversation
+      nextTick(() => scrollToBottom())
     }
   },
   { immediate: true },
 )
 
 onUnmounted(() => chat.clearConversation())
+
+// --- Auto-scroll logic ---
+const scrollContainer = ref<HTMLElement | null>(null)
+const userScrolledUp = ref(false)
+
+function isNearBottom(threshold = 80): boolean {
+  const el = scrollContainer.value
+  if (!el) return true
+  return el.scrollHeight - el.scrollTop - el.clientHeight < threshold
+}
+
+function scrollToBottom() {
+  const el = scrollContainer.value
+  if (!el) return
+  el.scrollTop = el.scrollHeight
+}
+
+function onScroll() {
+  if (!chat.isStreaming) return
+  // User scrolled away from bottom during streaming → pause auto-scroll
+  userScrolledUp.value = !isNearBottom()
+}
+
+// Auto-scroll during streaming when content changes
+watch(
+  () => [chat.streamingContent, chat.toolCalls.length],
+  () => {
+    if (chat.isStreaming && !userScrolledUp.value) {
+      nextTick(() => scrollToBottom())
+    }
+  },
+)
+
+// When new messages are added (user sends or streaming finishes)
+watch(
+  () => chat.messages.length,
+  () => {
+    // Reset scroll lock and scroll down on new messages
+    userScrolledUp.value = false
+    nextTick(() => scrollToBottom())
+  },
+)
+
+// Reset scroll lock when streaming starts (user just sent a message)
+watch(
+  () => chat.isStreaming,
+  (streaming) => {
+    if (streaming) {
+      userScrolledUp.value = false
+      nextTick(() => scrollToBottom())
+    }
+  },
+)
 </script>
 
 <template>
@@ -33,7 +88,7 @@ onUnmounted(() => chat.clearConversation())
         </div>
 
         <!-- Messages area (scrollable) -->
-        <div class="flex-1 overflow-y-auto scrollbar-thin">
+        <div ref="scrollContainer" class="flex-1 overflow-y-auto scrollbar-thin" @scroll="onScroll">
           <div class="px-4 py-6">
             <ChatMessages />
           </div>

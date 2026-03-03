@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-export type ProviderName = 'anthropic' | 'minimax' | 'zai' | 'claude-code'
+export type ProviderName = 'minimax' | 'zai' | 'claude-code'
 
 export interface ProviderConfig {
   apiKey: string
@@ -36,7 +36,6 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const providers = ref<Record<string, ProviderConfig>>({
     'claude-code': { apiKey: '', groupId: '', enabled: true },
-    anthropic: { apiKey: '', groupId: '', enabled: true },
     minimax: { apiKey: '', groupId: '', enabled: false },
     zai: { apiKey: '', groupId: '', enabled: false },
   })
@@ -59,11 +58,18 @@ export const useSettingsStore = defineStore('settings', () => {
     }>>('/api/providers')
 
     allModels.value = data.flatMap(p =>
-      p.models.map(m => ({
-        provider: p.provider,
-        id: m.id,
-        label: `${p.providerLabel} - ${m.label}`,
-      })),
+      p.models.map(m => {
+        // Strip redundant provider prefix from model label
+        // e.g. "Claude Code Opus 4.6" → "Opus 4.6" when provider is "Claude Code"
+        const modelLabel = m.label.startsWith(p.providerLabel)
+          ? m.label.slice(p.providerLabel.length).replace(/^[\s-]+/, '')
+          : m.label
+        return {
+          provider: p.provider,
+          id: m.id,
+          label: `${p.providerLabel} - ${modelLabel}`,
+        }
+      }),
     )
   }
 
@@ -126,6 +132,14 @@ export const useSettingsStore = defineStore('settings', () => {
   function setModel(provider: ProviderName, model: string) {
     activeProvider.value = provider
     activeModel.value = model
+    // Auto-save model selection to DB
+    $fetch('/api/settings', {
+      method: 'POST',
+      body: {
+        providers: {},
+        app: { activeProvider: provider, activeModel: model },
+      },
+    }).catch(() => {})
   }
 
   return {

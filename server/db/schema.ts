@@ -28,11 +28,23 @@ export const messages = sqliteTable('messages', {
     .references(() => conversations.id, { onDelete: 'cascade' }),
   role: text('role').notNull(),
   content: text('content').notNull(),
+  images: text('images'), // JSON array of data URLs
   model: text('model'),
   provider: text('provider'),
   tokensUsed: integer('tokens_used'),
   durationMs: integer('duration_ms'),
   createdAt: text('created_at').notNull().default(sql`(CURRENT_TIMESTAMP)`),
+})
+
+export const memories = sqliteTable('memories', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  conversationId: text('conversation_id').references(() => conversations.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  type: text('type').notNull().default('auto'), // 'auto' | 'manual'
+  sourceMessageId: text('source_message_id'),
+  createdAt: text('created_at').notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: text('updated_at').notNull().default(sql`(CURRENT_TIMESTAMP)`),
 })
 
 export const providerSettings = sqliteTable('provider_settings', {
@@ -55,4 +67,6 @@ export type Conversation = typeof conversations.$inferSelect
 export type InsertConversation = typeof conversations.$inferInsert
 export type Message = typeof messages.$inferSelect
 export type InsertMessage = typeof messages.$inferInsert
+export type Memory = typeof memories.$inferSelect
+export type InsertMemory = typeof memories.$inferInsert
 export type ProviderSetting = typeof providerSettings.$inferSelect
