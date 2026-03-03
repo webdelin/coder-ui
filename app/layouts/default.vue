@@ -39,30 +39,31 @@ const colorModeIcon = computed(() =>
       collapsible
       resizable
       :ui="{
-        root: 'bg-[var(--ui-bg-muted)]',
-        header: 'border-b-0',
-        body: 'p-2',
-        footer: 'border-t border-[var(--ui-border)] p-2',
+        root: 'bg-[var(--ui-bg-muted)] border-r border-[var(--ui-border-muted)]',
+        header: 'border-b-0 p-3',
+        body: 'p-3',
+        footer: 'border-t border-[var(--ui-border-muted)] p-3',
       }"
     >
       <template #header="{ collapsed }">
         <div class="flex items-center gap-2.5">
-          <div class="size-8 rounded-lg bg-[var(--ui-bg-elevated)] flex items-center justify-center flex-shrink-0">
-            <UIcon name="i-lucide-terminal" class="size-4" />
+          <div class="size-8 rounded-lg bg-[var(--ui-bg-accented)] flex items-center justify-center flex-shrink-0">
+            <UIcon name="i-lucide-terminal" class="size-4 dark:invert" />
           </div>
           <div v-if="!collapsed" class="flex flex-col min-w-0">
-            <span class="font-semibold text-sm truncate">Coder UI</span>
-            <span class="text-xs text-[var(--ui-text-muted)]">Web UI</span>
+            <span class="font-semibold text-sm leading-tight truncate">Coder UI</span>
+            <span class="text-[11px] text-[var(--ui-text-muted)] leading-tight">Web UI</span>
           </div>
         </div>
       </template>
 
       <template #default="{ collapsed }">
-        <div class="flex gap-1 mb-2">
+        <div class="flex gap-1.5 mb-3">
           <UButton
             :label="collapsed ? undefined : 'New Chat'"
             icon="i-lucide-plus"
-            color="primary"
+            color="neutral"
+            variant="outline"
             :block="collapsed"
             :square="collapsed"
             class="flex-1"
@@ -81,8 +82,8 @@ const colorModeIcon = computed(() =>
           />
         </div>
 
-        <div v-if="!collapsed" class="mt-1">
-          <div class="text-[10px] font-semibold text-[var(--ui-text-muted)] uppercase tracking-wider mb-1.5 px-2">
+        <div v-if="!collapsed">
+          <div class="text-[10px] font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-widest mb-2 px-2">
             Projects
           </div>
           <ChatSidebar />
@@ -99,6 +100,7 @@ const colorModeIcon = computed(() =>
             block
             :square="collapsed"
             size="sm"
+            class="justify-start"
             @click="toggleColorMode"
           />
           <UButton
@@ -110,6 +112,7 @@ const colorModeIcon = computed(() =>
             block
             :square="collapsed"
             size="sm"
+            class="justify-start"
           />
         </div>
       </template>

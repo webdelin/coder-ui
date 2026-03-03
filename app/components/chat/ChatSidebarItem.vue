@@ -68,7 +68,7 @@ async function deleteConversation() {
       <input
         ref="editInputRef"
         v-model="editingTitle"
-        class="flex-1 text-sm bg-[var(--ui-bg-elevated)] border border-[var(--ui-border-active)] rounded px-2 py-0.5 outline-none"
+        class="flex-1 text-xs bg-[var(--ui-bg-elevated)] border border-[var(--ui-border-active)] rounded-md px-2 py-1 outline-none"
         @keydown.enter="finishRename"
         @keydown.escape="cancelRename"
         @blur="finishRename"
@@ -79,18 +79,18 @@ async function deleteConversation() {
     <NuxtLink
       v-else
       :to="`/chat/${conversation.id}`"
-      class="flex-1 min-w-0 px-2 py-1.5 rounded-md transition-colors"
+      class="flex-1 min-w-0 px-2 py-1 rounded-md transition-colors"
       :class="isActive
         ? 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text-highlighted)]'
         : 'text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text-highlighted)]'"
       @dblclick.prevent="startRename"
     >
       <div class="flex items-center gap-2">
-        <UIcon name="i-lucide-message-square" class="size-3.5 shrink-0" />
-        <span class="truncate text-sm flex-1">{{ conversation.title }}</span>
+        <UIcon name="i-lucide-message-square" class="size-3.5 shrink-0 opacity-60" />
+        <span class="truncate text-xs flex-1">{{ conversation.title }}</span>
         <span
           v-if="conversation.messageCount"
-          class="text-[10px] text-[var(--ui-text-muted)] shrink-0 tabular-nums"
+          class="text-[10px] text-[var(--ui-text-dimmed)] shrink-0 tabular-nums"
         >
           {{ conversation.messageCount }}
         </span>
@@ -98,20 +98,20 @@ async function deleteConversation() {
     </NuxtLink>
 
     <!-- Actions -->
-    <div v-if="editingId !== conversation.id" class="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div v-if="editingId !== conversation.id" class="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
       <button
-        class="p-1 rounded text-[var(--ui-text-muted)] hover:text-[var(--ui-text-highlighted)]"
+        class="p-1 rounded-md text-[var(--ui-text-dimmed)] hover:text-[var(--ui-text-highlighted)] transition-colors"
         title="Rename"
         @click.prevent="startRename"
       >
         <UIcon name="i-lucide-pencil" class="size-3" />
       </button>
       <button
-        class="p-0.5 rounded text-[var(--ui-text-muted)] hover:text-[var(--ui-color-error)] text-sm leading-none"
+        class="p-1 rounded-md text-[var(--ui-text-dimmed)] hover:text-[var(--ui-color-error)] transition-colors"
         title="Delete"
         @click.prevent="deleteConversation"
       >
-        &times;
+        <UIcon name="i-lucide-x" class="size-3" />
       </button>
     </div>
   </div>

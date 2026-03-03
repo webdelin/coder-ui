@@ -21,6 +21,28 @@ const engineOptions = [
   { label: 'MiniMax API', value: 'minimax' },
 ]
 
+const sttEngineOptions = [
+  { label: 'Browser (Chrome/Edge)', value: 'browser' },
+  { label: 'Whisper API (all browsers)', value: 'whisper' },
+]
+
+const sttPresetOptions = [
+  { label: 'Groq (Free)', value: 'groq', url: 'https://api.groq.com/openai/v1/audio/transcriptions', model: 'whisper-large-v3-turbo' },
+  { label: 'OpenAI', value: 'openai', url: 'https://api.openai.com/v1/audio/transcriptions', model: 'whisper-1' },
+  { label: 'Custom', value: 'custom', url: '', model: '' },
+]
+
+const sttPreset = ref('groq')
+
+function applySttPreset(presetValue: string) {
+  sttPreset.value = presetValue
+  const preset = sttPresetOptions.find(p => p.value === presetValue)
+  if (preset && preset.value !== 'custom') {
+    settings.sttWhisperUrl = preset.url
+    settings.sttWhisperModel = preset.model
+  }
+}
+
 const minimaxVoiceOptions = [
   { label: 'Qingse (Male)', value: 'male-qn-qingse' },
   { label: 'Jingying (Male)', value: 'male-qn-jingying' },
@@ -94,7 +116,7 @@ async function clearAllConversations() {
 
     <!-- Providers -->
     <div class="space-y-3">
-      <h3 class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wider">
+      <h3 class="text-[10px] font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-widest">
         Providers
       </h3>
 
@@ -137,7 +159,7 @@ async function clearAllConversations() {
 
     <!-- Defaults -->
     <div class="space-y-3">
-      <h3 class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wider">
+      <h3 class="text-[10px] font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-widest">
         Defaults
       </h3>
 
@@ -156,7 +178,7 @@ async function clearAllConversations() {
 
     <!-- Text-to-Speech -->
     <div class="space-y-3">
-      <h3 class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wider">
+      <h3 class="text-[10px] font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-widest">
         Text-to-Speech
       </h3>
 
@@ -231,9 +253,78 @@ async function clearAllConversations() {
       </div>
     </div>
 
+    <!-- Speech-to-Text -->
+    <div class="space-y-3">
+      <h3 class="text-[10px] font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-widest">
+        Speech-to-Text
+      </h3>
+
+      <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)] p-4 space-y-4">
+        <UFormField label="Engine">
+          <USelectMenu
+            v-model="settings.sttEngine"
+            :items="sttEngineOptions"
+            value-key="value"
+            size="sm"
+            class="w-full"
+          />
+          <p class="text-xs text-[var(--ui-text-muted)] mt-1">
+            {{ settings.sttEngine === 'browser'
+              ? 'Uses browser SpeechRecognition (Chrome/Edge only). Falls back to Whisper in Firefox.'
+              : 'Records audio and transcribes via Whisper API. Works in all browsers (Chrome, Firefox, Edge).'
+            }}
+          </p>
+        </UFormField>
+
+        <template v-if="settings.sttEngine === 'whisper'">
+          <UFormField label="Provider">
+            <USelectMenu
+              :model-value="sttPreset"
+              :items="sttPresetOptions"
+              value-key="value"
+              size="sm"
+              class="w-full"
+              @update:model-value="applySttPreset"
+            />
+          </UFormField>
+
+          <UFormField label="API Key" required>
+            <UInput
+              v-model="settings.sttWhisperApiKey"
+              type="password"
+              placeholder="Enter Whisper API key..."
+              class="w-full"
+              size="sm"
+            />
+            <p v-if="sttPreset === 'groq'" class="text-xs text-[var(--ui-text-muted)] mt-1">
+              Get a free key at <a href="https://console.groq.com" target="_blank" class="underline">console.groq.com</a>
+            </p>
+          </UFormField>
+
+          <UFormField v-if="sttPreset === 'custom'" label="API URL">
+            <UInput
+              v-model="settings.sttWhisperUrl"
+              placeholder="https://api.example.com/v1/audio/transcriptions"
+              class="w-full"
+              size="sm"
+            />
+          </UFormField>
+
+          <UFormField v-if="sttPreset === 'custom'" label="Model">
+            <UInput
+              v-model="settings.sttWhisperModel"
+              placeholder="whisper-large-v3-turbo"
+              class="w-full"
+              size="sm"
+            />
+          </UFormField>
+        </template>
+      </div>
+    </div>
+
     <!-- Appearance -->
     <div class="space-y-3">
-      <h3 class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wider">
+      <h3 class="text-[10px] font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-widest">
         Appearance
       </h3>
 
@@ -263,7 +354,7 @@ async function clearAllConversations() {
     <!-- Save Button -->
     <button
       :disabled="saving"
-      class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--ui-bg-inverted)] text-[var(--ui-bg)] font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+      class="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-[var(--ui-bg-inverted)] text-[var(--ui-bg)] font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
       @click="save"
     >
       <UIcon v-if="!saving" name="i-lucide-save" class="size-4" />

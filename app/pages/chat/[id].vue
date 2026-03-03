@@ -25,11 +25,11 @@ onUnmounted(() => chat.clearConversation())
         <!-- Project context banner -->
         <div
           v-if="projectsStore.activeProject"
-          class="px-4 py-2 text-xs text-[var(--ui-text-muted)] border-b border-[var(--ui-border)] flex items-center gap-2"
+          class="px-4 py-2 text-xs text-[var(--ui-text-dimmed)] border-b border-[var(--ui-border-muted)] flex items-center gap-2 bg-[var(--ui-bg)]"
         >
-          <UIcon name="i-lucide-folder" class="size-3.5" />
-          <span class="font-medium">{{ projectsStore.activeProject.displayName }}</span>
-          <span class="font-mono opacity-60 truncate">{{ projectsStore.activeProject.path }}</span>
+          <UIcon name="i-lucide-folder" class="size-3.5 opacity-60" />
+          <span class="font-medium text-[var(--ui-text-muted)]">{{ projectsStore.activeProject.displayName }}</span>
+          <span class="font-mono truncate">{{ projectsStore.activeProject.path }}</span>
         </div>
 
         <!-- Messages area (scrollable) -->
@@ -40,7 +40,7 @@ onUnmounted(() => chat.clearConversation())
         </div>
 
         <!-- Input area (sticky bottom) -->
-        <div class="chat-input-area border-t border-[var(--ui-border)]">
+        <div class="chat-input-area border-t border-[var(--ui-border-muted)]">
           <div class="chat-max-w px-4 py-3">
             <ChatInput />
           </div>

@@ -25,6 +25,12 @@ export const useSettingsStore = defineStore('settings', () => {
   const ttsSpeed = ref<number>(1.0)
   const ttsAutoRead = ref<boolean>(false)
 
+  // STT settings
+  const sttEngine = ref<'browser' | 'whisper'>('browser')
+  const sttWhisperUrl = ref<string>('https://api.groq.com/openai/v1/audio/transcriptions')
+  const sttWhisperApiKey = ref<string>('')
+  const sttWhisperModel = ref<string>('whisper-large-v3-turbo')
+
   const providers = ref<Record<string, ProviderConfig>>({
     'claude-code': { apiKey: '', groupId: '', enabled: true },
     anthropic: { apiKey: '', groupId: '', enabled: true },
@@ -82,6 +88,10 @@ export const useSettingsStore = defineStore('settings', () => {
     if (data.app.ttsLocalVoice) ttsLocalVoice.value = data.app.ttsLocalVoice
     if (data.app.ttsSpeed) ttsSpeed.value = parseFloat(data.app.ttsSpeed)
     if (data.app.ttsAutoRead) ttsAutoRead.value = data.app.ttsAutoRead === 'true'
+    if (data.app.sttEngine) sttEngine.value = data.app.sttEngine as 'browser' | 'whisper'
+    if (data.app.sttWhisperUrl) sttWhisperUrl.value = data.app.sttWhisperUrl
+    if (data.app.sttWhisperApiKey) sttWhisperApiKey.value = data.app.sttWhisperApiKey
+    if (data.app.sttWhisperModel) sttWhisperModel.value = data.app.sttWhisperModel
   }
 
   async function saveToServer() {
@@ -99,6 +109,10 @@ export const useSettingsStore = defineStore('settings', () => {
           ttsLocalVoice: ttsLocalVoice.value,
           ttsSpeed: String(ttsSpeed.value),
           ttsAutoRead: String(ttsAutoRead.value),
+          sttEngine: sttEngine.value,
+          sttWhisperUrl: sttWhisperUrl.value,
+          sttWhisperApiKey: sttWhisperApiKey.value,
+          sttWhisperModel: sttWhisperModel.value,
         },
       },
     })
@@ -119,6 +133,10 @@ export const useSettingsStore = defineStore('settings', () => {
     ttsLocalVoice,
     ttsSpeed,
     ttsAutoRead,
+    sttEngine,
+    sttWhisperUrl,
+    sttWhisperApiKey,
+    sttWhisperModel,
     providers,
     allModels,
     availableModels,

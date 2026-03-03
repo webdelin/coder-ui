@@ -12,10 +12,41 @@
   --sidebar-width-collapsed: 3.6rem;
   --header-height: 56px;
 
-  /* Root typography — slightly larger like claude-code-web */
-  font-size: 1.05rem;
+  /* Root typography */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---- Dark mode OKLCH overrides (claude-code-web palette) ---- */
+.dark {
+  --ui-bg: oklch(14.5% 0 0);
+  --ui-bg-muted: oklch(17.8% 0 0);
+  --ui-bg-elevated: oklch(20.5% 0 0);
+  --ui-bg-accented: oklch(26.9% 0 0);
+  --ui-bg-inverted: oklch(98.5% 0 0);
+  --ui-border: oklch(26.9% 0 0);
+  --ui-border-muted: oklch(22% 0 0);
+  --ui-border-active: oklch(43.9% 0 0);
+  --ui-text: oklch(98.5% 0 0);
+  --ui-text-highlighted: oklch(98.5% 0 0);
+  --ui-text-muted: oklch(55.6% 0 0);
+  --ui-text-dimmed: oklch(43.9% 0 0);
+}
+
+/* ---- Light mode OKLCH overrides ---- */
+:root:not(.dark) {
+  --ui-bg: oklch(100% 0 0);
+  --ui-bg-muted: oklch(98.5% 0 0);
+  --ui-bg-elevated: oklch(97% 0 0);
+  --ui-bg-accented: oklch(92.2% 0 0);
+  --ui-bg-inverted: oklch(20.5% 0 0);
+  --ui-border: oklch(92.2% 0 0);
+  --ui-border-muted: oklch(95% 0 0);
+  --ui-border-active: oklch(55.6% 0 0);
+  --ui-text: oklch(14.5% 0 0);
+  --ui-text-highlighted: oklch(14.5% 0 0);
+  --ui-text-muted: oklch(55.6% 0 0);
+  --ui-text-dimmed: oklch(70.8% 0 0);
 }
 
 /* ---- Chat bubble styling ---- */

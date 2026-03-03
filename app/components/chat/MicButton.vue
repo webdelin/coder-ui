@@ -5,110 +5,264 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
+const settings = useSettingsStore()
 const isRecording = ref(false)
-const isSupported = ref(false)
+const status = ref<'idle' | 'starting' | 'recording' | 'transcribing' | 'error'>('idle')
+const errorMsg = ref('')
 let recognition: any = null
+let mediaRecorder: MediaRecorder | null = null
+let audioChunks: Blob[] = []
+
+// Determine which STT engine to use
+const hasBrowserSTT = ref(false)
 
 onMounted(() => {
-  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-  isSupported.value = !!SpeechRecognition
+  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  hasBrowserSTT.value = !!SR
 
-  if (!SpeechRecognition) return
+  if (SR && settings.sttEngine === 'browser') {
+    initBrowserSTT(SR)
+  }
+})
 
-  recognition = new SpeechRecognition()
+// Watch for engine changes
+watch(() => settings.sttEngine, (engine) => {
+  if (engine === 'browser' && hasBrowserSTT.value) {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (SR) initBrowserSTT(SR)
+  }
+})
+
+function initBrowserSTT(SR: any) {
+  recognition = new SR()
   recognition.continuous = true
   recognition.interimResults = true
-  recognition.lang = navigator.language || 'en-US'
+  recognition.lang = navigator.language || 'de-DE'
 
   recognition.onresult = (event: any) => {
-    let interimTranscript = ''
+    let interim = ''
     for (let i = event.resultIndex; i < event.results.length; i++) {
-      const result = event.results[i]
-      if (result.isFinal) {
-        emit('transcript', result[0].transcript)
+      if (event.results[i].isFinal) {
+        emit('transcript', event.results[i][0].transcript)
       } else {
-        interimTranscript += result[0].transcript
+        interim += event.results[i][0].transcript
       }
     }
-    if (interimTranscript) {
-      emit('interim', interimTranscript)
-    }
+    if (interim) emit('interim', interim)
   }
 
   recognition.onerror = (event: any) => {
+    console.error('[MicButton] recognition error:', event.error)
+    status.value = 'error'
     isRecording.value = false
-    const messages: Record<string, string> = {
-      'not-allowed': 'Microphone access denied. Allow microphone in browser settings.',
-      'no-speech': 'No speech detected. Try again.',
-      'audio-capture': 'No microphone found. Check your audio devices.',
-      'network': 'Network error. Speech recognition requires internet.',
+
+    const msgs: Record<string, string> = {
+      'not-allowed': 'Mikrofon verweigert.',
+      'no-speech': 'Keine Sprache erkannt.',
+      'audio-capture': 'Kein Mikrofon gefunden.',
+      'network': 'Netzwerkfehler bei Spracherkennung.',
+      'service-not-allowed': 'Spracherkennung blockiert.',
       'aborted': '',
     }
-    const msg = messages[event.error] ?? `Speech recognition error: ${event.error}`
+    const msg = msgs[event.error] ?? `Fehler: ${event.error}`
     if (msg) {
+      errorMsg.value = msg
       toast.add({ title: msg, color: 'error' })
     }
   }
 
+  recognition.onstart = () => {
+    status.value = 'recording'
+  }
+
   recognition.onend = () => {
-    // Auto-restart if still recording (browser may stop after silence)
     if (isRecording.value) {
-      try {
-        recognition.start()
-      } catch {
-        isRecording.value = false
-      }
-    }
-  }
-})
-
-async function toggle() {
-  if (!recognition) {
-    toast.add({ title: 'Speech recognition not supported in this browser', color: 'error' })
-    return
-  }
-
-  if (isRecording.value) {
-    isRecording.value = false
-    recognition.stop()
-  } else {
-    // Check microphone permission first
-    try {
-      await navigator.mediaDevices.getUserMedia({ audio: true })
-    } catch {
-      toast.add({ title: 'Microphone access denied', color: 'error' })
-      return
-    }
-
-    try {
-      recognition.start()
-      isRecording.value = true
-    } catch (e: any) {
-      toast.add({ title: `Could not start recording: ${e.message}`, color: 'error' })
+      try { recognition.start() } catch { isRecording.value = false; status.value = 'idle' }
+    } else {
+      status.value = 'idle'
     }
   }
 }
 
-onUnmounted(() => {
-  if (isRecording.value && recognition) {
+// Determine if we should use MediaRecorder (Whisper) mode
+const useWhisper = computed(() => {
+  if (settings.sttEngine === 'whisper') return true
+  if (settings.sttEngine === 'browser' && !hasBrowserSTT.value) return true
+  return false
+})
+
+async function toggle() {
+  errorMsg.value = ''
+
+  if (isRecording.value) {
+    stopRecording()
+    return
+  }
+
+  // Start recording
+  status.value = 'starting'
+
+  // Request microphone permission
+  let stream: MediaStream
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+  } catch {
+    status.value = 'error'
+    errorMsg.value = 'Mikrofon-Zugriff verweigert'
+    toast.add({ title: 'Mikrofon-Zugriff verweigert', color: 'error' })
+    return
+  }
+
+  if (useWhisper.value) {
+    startMediaRecorder(stream)
+  } else {
+    // Release stream for browser SpeechRecognition
+    stream.getTracks().forEach(t => t.stop())
+    startBrowserSTT()
+  }
+}
+
+function startBrowserSTT() {
+  if (!recognition) {
+    status.value = 'error'
+    errorMsg.value = 'SpeechRecognition nicht verfügbar'
+    toast.add({ title: 'SpeechRecognition nicht verfügbar', color: 'error' })
+    return
+  }
+
+  try {
+    recognition.start()
+    isRecording.value = true
+  } catch (e: any) {
+    status.value = 'error'
+    errorMsg.value = e.message
+    toast.add({ title: `Start fehlgeschlagen: ${e.message}`, color: 'error' })
+  }
+}
+
+function startMediaRecorder(stream: MediaStream) {
+  audioChunks = []
+
+  // Use webm/opus if supported, fallback to default
+  const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+    ? 'audio/webm;codecs=opus'
+    : MediaRecorder.isTypeSupported('audio/webm')
+      ? 'audio/webm'
+      : ''
+
+  mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+
+  mediaRecorder.ondataavailable = (e) => {
+    if (e.data.size > 0) audioChunks.push(e.data)
+  }
+
+  mediaRecorder.onstop = async () => {
+    // Stop all tracks to release the mic
+    stream.getTracks().forEach(t => t.stop())
+
+    if (!audioChunks.length) {
+      status.value = 'idle'
+      return
+    }
+
+    status.value = 'transcribing'
+    emit('interim', 'Transcribing...')
+
+    try {
+      const audioBlob = new Blob(audioChunks, { type: mediaRecorder?.mimeType || 'audio/webm' })
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'recording.webm')
+
+      const result = await $fetch<{ text: string }>('/api/stt/transcribe', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (result.text?.trim()) {
+        emit('transcript', result.text.trim())
+        emit('interim', '')
+      } else {
+        emit('interim', '')
+        errorMsg.value = 'Keine Sprache erkannt'
+      }
+      status.value = 'idle'
+    } catch (e: any) {
+      console.error('[MicButton] Whisper transcription failed:', e)
+      status.value = 'error'
+      emit('interim', '')
+      const msg = e.data?.message || e.message || 'Transkription fehlgeschlagen'
+      errorMsg.value = msg
+      toast.add({ title: msg, color: 'error' })
+    }
+  }
+
+  mediaRecorder.onerror = () => {
+    stream.getTracks().forEach(t => t.stop())
+    status.value = 'error'
     isRecording.value = false
+    errorMsg.value = 'Aufnahme fehlgeschlagen'
+  }
+
+  mediaRecorder.start(1000) // Collect chunks every second
+  isRecording.value = true
+  status.value = 'recording'
+}
+
+function stopRecording() {
+  isRecording.value = false
+
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop()
+  } else if (recognition) {
     recognition.stop()
+    status.value = 'idle'
+  }
+}
+
+onUnmounted(() => {
+  if (isRecording.value) {
+    stopRecording()
   }
 })
 </script>
 
 <template>
-  <button
-    class="size-12 rounded-full flex items-center justify-center shrink-0 transition-all"
-    :class="isRecording
-      ? 'bg-red-500 text-white mic-pulse'
-      : 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text-muted)] hover:opacity-80'"
-    :title="isRecording ? 'Stop recording' : 'Start voice input'"
-    @click="toggle"
-  >
-    <UIcon
-      :name="isRecording ? 'i-lucide-mic-off' : 'i-lucide-mic'"
-      class="size-5"
-    />
-  </button>
+  <div class="flex flex-col items-center gap-1">
+    <button
+      class="size-12 rounded-full flex items-center justify-center shrink-0 transition-all"
+      :class="isRecording
+        ? 'bg-red-500 text-white mic-pulse'
+        : status === 'transcribing'
+          ? 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text-highlighted)] animate-pulse'
+          : status === 'error'
+            ? 'bg-[var(--ui-bg-elevated)] text-[var(--ui-color-error)]'
+            : 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text-muted)] hover:opacity-80'"
+      :title="errorMsg || (isRecording ? 'Aufnahme stoppen' : status === 'transcribing' ? 'Transkribiere...' : 'Spracheingabe starten')"
+      :disabled="status === 'transcribing'"
+      @click="toggle"
+    >
+      <UIcon
+        v-if="status === 'transcribing'"
+        name="i-lucide-loader"
+        class="size-5 animate-spin"
+      />
+      <UIcon
+        v-else
+        :name="isRecording ? 'i-lucide-mic-off' : 'i-lucide-mic'"
+        class="size-5"
+      />
+    </button>
+    <span
+      v-if="errorMsg && !isRecording"
+      class="text-[9px] text-[var(--ui-color-error)] max-w-20 text-center leading-tight"
+    >
+      {{ errorMsg }}
+    </span>
+    <span
+      v-else-if="useWhisper && !isRecording && status === 'idle'"
+      class="text-[9px] text-[var(--ui-text-dimmed)] max-w-20 text-center leading-tight"
+    >
+      Whisper
+    </span>
+  </div>
 </template>
