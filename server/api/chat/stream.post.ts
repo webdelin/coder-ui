@@ -55,9 +55,6 @@ export default defineEventHandler(async (event) => {
 
   // 5. Stream from provider
   const provider = getProvider(body.provider)
-  const opts = body.provider === 'minimax'
-    ? { groupId: settings.groupId ?? '' }
-    : {}
   const startTime = Date.now()
   let fullText = ''
 
@@ -76,7 +73,6 @@ export default defineEventHandler(async (event) => {
       model: body.model,
     },
     settings.apiKey,
-    opts,
   )
 
   const eventStream = createEventStream(event)

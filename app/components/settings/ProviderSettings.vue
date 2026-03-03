@@ -56,13 +56,6 @@ async function save() {
             />
           </UFormField>
 
-          <UFormField v-if="provider.key === 'minimax'" label="Group ID">
-            <UInput
-              v-model="settings.providers[provider.key].groupId"
-              placeholder="MiniMax Group ID..."
-              class="w-full"
-            />
-          </UFormField>
         </template>
       </div>
     </div>
