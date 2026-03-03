@@ -25,6 +25,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const ttsSpeed = ref<number>(1.0)
   const ttsAutoRead = ref<boolean>(false)
 
+  // Language
+  const locale = ref<string>('en')
+
   // STT settings
   const sttEngine = ref<'browser' | 'local' | 'whisper'>('local')
   const sttWhisperUrl = ref<string>('https://api.groq.com/openai/v1/audio/transcriptions')
@@ -92,6 +95,7 @@ export const useSettingsStore = defineStore('settings', () => {
     if (data.app.sttWhisperUrl) sttWhisperUrl.value = data.app.sttWhisperUrl
     if (data.app.sttWhisperApiKey) sttWhisperApiKey.value = data.app.sttWhisperApiKey
     if (data.app.sttWhisperModel) sttWhisperModel.value = data.app.sttWhisperModel
+    if (data.app.locale) locale.value = data.app.locale
   }
 
   async function saveToServer() {
@@ -113,6 +117,7 @@ export const useSettingsStore = defineStore('settings', () => {
           sttWhisperUrl: sttWhisperUrl.value,
           sttWhisperApiKey: sttWhisperApiKey.value,
           sttWhisperModel: sttWhisperModel.value,
+          locale: locale.value,
         },
       },
     })
@@ -137,6 +142,7 @@ export const useSettingsStore = defineStore('settings', () => {
     sttWhisperUrl,
     sttWhisperApiKey,
     sttWhisperModel,
+    locale,
     providers,
     allModels,
     availableModels,

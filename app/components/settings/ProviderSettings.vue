@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const settings = useSettingsStore()
 const conversationsStore = useConversationsStore()
 const toast = useToast()
@@ -16,28 +17,28 @@ const providerList = [
 
 const tts = useTTSStore()
 
-const engineOptions = [
-  { label: 'Local (Browser)', value: 'local' },
-  { label: 'MiniMax API', value: 'minimax' },
-]
+const engineOptions = computed(() => [
+  { label: t('ttsEngine.local'), value: 'local' },
+  { label: t('ttsEngine.minimax'), value: 'minimax' },
+])
 
-const sttEngineOptions = [
-  { label: 'Local (faster-whisper)', value: 'local' },
-  { label: 'Browser (Chrome/Edge)', value: 'browser' },
-  { label: 'Whisper API (Groq/OpenAI)', value: 'whisper' },
-]
+const sttEngineOptions = computed(() => [
+  { label: t('sttEngine.local'), value: 'local' },
+  { label: t('sttEngine.browser'), value: 'browser' },
+  { label: t('sttEngine.whisper'), value: 'whisper' },
+])
 
-const sttPresetOptions = [
-  { label: 'Groq (Free)', value: 'groq', url: 'https://api.groq.com/openai/v1/audio/transcriptions', model: 'whisper-large-v3-turbo' },
-  { label: 'OpenAI', value: 'openai', url: 'https://api.openai.com/v1/audio/transcriptions', model: 'whisper-1' },
-  { label: 'Custom', value: 'custom', url: '', model: '' },
-]
+const sttPresetOptions = computed(() => [
+  { label: t('sttPreset.groq'), value: 'groq', url: 'https://api.groq.com/openai/v1/audio/transcriptions', model: 'whisper-large-v3-turbo' },
+  { label: t('sttPreset.openai'), value: 'openai', url: 'https://api.openai.com/v1/audio/transcriptions', model: 'whisper-1' },
+  { label: t('sttPreset.custom'), value: 'custom', url: '', model: '' },
+])
 
 const sttPreset = ref('groq')
 
 function applySttPreset(presetValue: string) {
   sttPreset.value = presetValue
-  const preset = sttPresetOptions.find(p => p.value === presetValue)
+  const preset = sttPresetOptions.value.find(p => p.value === presetValue)
   if (preset && preset.value !== 'custom') {
     settings.sttWhisperUrl = preset.url
     settings.sttWhisperModel = preset.model
@@ -64,14 +65,14 @@ const localVoiceOptions = computed(() =>
   })),
 )
 
-const speedOptions = [
+const speedOptions = computed(() => [
   { label: '0.5x', value: 0.5 },
   { label: '0.75x', value: 0.75 },
-  { label: '1.0x (Normal)', value: 1.0 },
+  { label: t('speed.normal'), value: 1.0 },
   { label: '1.25x', value: 1.25 },
   { label: '1.5x', value: 1.5 },
   { label: '2.0x', value: 2.0 },
-]
+])
 
 const colorModeOptions = [
   { label: 'Light', value: 'light', icon: 'i-lucide-sun' },
@@ -79,14 +80,20 @@ const colorModeOptions = [
   { label: 'System', value: 'system', icon: 'i-lucide-monitor' },
 ]
 
+const localeOptions = [
+  { label: 'English', value: 'en' },
+  { label: 'Русский', value: 'ru' },
+  { label: 'Deutsch', value: 'de' },
+]
+
 async function save() {
   saving.value = true
   try {
     await settings.saveToServer()
     await settings.fetchModels()
-    toast.add({ title: 'Settings saved', color: 'success' })
+    toast.add({ title: t('settings.saved'), color: 'success' })
   } catch (e: any) {
-    toast.add({ title: 'Failed to save', description: e.message, color: 'error' })
+    toast.add({ title: t('settings.saveFailed'), description: e.message, color: 'error' })
   } finally {
     saving.value = false
   }
@@ -96,10 +103,10 @@ async function clearAllConversations() {
   try {
     await conversationsStore.clearAll()
     showClearConfirm.value = false
-    toast.add({ title: 'All conversations deleted', color: 'success' })
+    toast.add({ title: t('settings.allDeleted'), color: 'success' })
     router.push('/')
   } catch (e: any) {
-    toast.add({ title: 'Failed to clear', description: e.message, color: 'error' })
+    toast.add({ title: t('settings.clearFailed'), description: e.message, color: 'error' })
   }
 }
 </script>
@@ -107,16 +114,16 @@ async function clearAllConversations() {
 <template>
   <div class="space-y-8">
     <div>
-      <h2 class="text-2xl font-bold tracking-tight">Settings</h2>
+      <h2 class="text-2xl font-bold tracking-tight">{{ t('settings.title') }}</h2>
       <p class="text-sm text-[var(--ui-text-muted)] mt-1">
-        Configure your AI providers and preferences.
+        {{ t('settings.subtitle') }}
       </p>
     </div>
 
     <!-- Providers -->
     <div class="space-y-3">
       <h3 class="text-[10px] font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-widest">
-        Providers
+        {{ t('settings.providers') }}
       </h3>
 
       <div
@@ -138,15 +145,15 @@ async function clearAllConversations() {
 
         <div v-if="settings.providers[provider.key]?.enabled" class="space-y-3 pl-11">
           <p v-if="provider.noApiKey" class="text-xs text-[var(--ui-text-muted)]">
-            Uses locally installed Claude Code CLI. No API key needed — it uses your existing Claude authentication.
+            {{ t('settings.cliNote') }}
           </p>
 
           <template v-if="!provider.noApiKey">
-            <UFormField label="API Key">
+            <UFormField :label="t('settings.apiKeyLabel')">
               <UInput
                 v-model="settings.providers[provider.key]!.apiKey"
                 type="password"
-                placeholder="Enter API key..."
+                :placeholder="t('settings.apiKeyPlaceholder')"
                 class="w-full"
                 size="sm"
               />
@@ -159,14 +166,14 @@ async function clearAllConversations() {
     <!-- Defaults -->
     <div class="space-y-3">
       <h3 class="text-[10px] font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-widest">
-        Defaults
+        {{ t('settings.defaults') }}
       </h3>
 
       <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)] p-4 space-y-4">
-        <UFormField label="System Prompt">
+        <UFormField :label="t('settings.systemPrompt')">
           <UTextarea
             v-model="settings.systemPrompt"
-            placeholder="Optional system prompt for all conversations..."
+            :placeholder="t('settings.systemPromptPlaceholder')"
             :rows="3"
             class="w-full"
             size="sm"
@@ -178,14 +185,14 @@ async function clearAllConversations() {
     <!-- Text-to-Speech -->
     <div class="space-y-3">
       <h3 class="text-[10px] font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-widest">
-        Text-to-Speech
+        {{ t('settings.tts') }}
       </h3>
 
       <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)] p-4 space-y-4">
         <div class="flex items-center justify-between">
           <div>
-            <span class="text-sm font-medium">Enable TTS</span>
-            <p class="text-xs text-[var(--ui-text-muted)]">Show speak button on messages</p>
+            <span class="text-sm font-medium">{{ t('settings.enableTts') }}</span>
+            <p class="text-xs text-[var(--ui-text-muted)]">{{ t('settings.ttsDescription') }}</p>
           </div>
           <USwitch v-model="settings.ttsEnabled" />
         </div>
@@ -193,13 +200,13 @@ async function clearAllConversations() {
         <template v-if="settings.ttsEnabled">
           <div class="flex items-center justify-between">
             <div>
-              <span class="text-sm font-medium">Auto-Read</span>
-              <p class="text-xs text-[var(--ui-text-muted)]">Automatically read responses aloud</p>
+              <span class="text-sm font-medium">{{ t('settings.autoRead') }}</span>
+              <p class="text-xs text-[var(--ui-text-muted)]">{{ t('settings.autoReadDescription') }}</p>
             </div>
             <USwitch v-model="settings.ttsAutoRead" />
           </div>
 
-          <UFormField label="Engine">
+          <UFormField :label="t('settings.engine')">
             <USelectMenu
               v-model="settings.ttsEngine"
               :items="engineOptions"
@@ -210,23 +217,23 @@ async function clearAllConversations() {
           </UFormField>
 
           <!-- Local voice picker -->
-          <UFormField v-if="settings.ttsEngine === 'local'" label="Voice">
+          <UFormField v-if="settings.ttsEngine === 'local'" :label="t('settings.voice')">
             <USelectMenu
               v-model="settings.ttsLocalVoice"
               :items="localVoiceOptions"
               value-key="value"
-              placeholder="System default"
+              :placeholder="t('settings.systemDefault')"
               size="sm"
               class="w-full"
               searchable
             />
             <p v-if="!localVoiceOptions.length" class="text-xs text-[var(--ui-text-muted)] mt-1">
-              No voices available — your browser may need to load them first.
+              {{ t('settings.noVoices') }}
             </p>
           </UFormField>
 
           <!-- MiniMax voice picker -->
-          <UFormField v-if="settings.ttsEngine === 'minimax'" label="Voice">
+          <UFormField v-if="settings.ttsEngine === 'minimax'" :label="t('settings.voice')">
             <USelectMenu
               v-model="settings.ttsVoice"
               :items="minimaxVoiceOptions"
@@ -235,11 +242,11 @@ async function clearAllConversations() {
               class="w-full"
             />
             <p v-if="!settings.providers.minimax?.apiKey" class="text-xs text-[var(--ui-color-error)] mt-1">
-              MiniMax API key required — configure it in Providers above.
+              {{ t('settings.minimaxKeyRequired') }}
             </p>
           </UFormField>
 
-          <UFormField label="Speed">
+          <UFormField :label="t('settings.speed')">
             <USelectMenu
               v-model="settings.ttsSpeed"
               :items="speedOptions"
@@ -255,11 +262,11 @@ async function clearAllConversations() {
     <!-- Speech-to-Text -->
     <div class="space-y-3">
       <h3 class="text-[10px] font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-widest">
-        Speech-to-Text
+        {{ t('settings.stt') }}
       </h3>
 
       <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)] p-4 space-y-4">
-        <UFormField label="Engine">
+        <UFormField :label="t('settings.engine')">
           <USelectMenu
             v-model="settings.sttEngine"
             :items="sttEngineOptions"
@@ -269,16 +276,16 @@ async function clearAllConversations() {
           />
           <p class="text-xs text-[var(--ui-text-muted)] mt-1">
             {{ settings.sttEngine === 'local'
-              ? 'Runs faster-whisper locally on the server. No API key needed. Requires: pip install faster-whisper'
+              ? t('settings.sttLocalDesc')
               : settings.sttEngine === 'browser'
-                ? 'Uses browser SpeechRecognition (Chrome/Edge only). Falls back to local in Firefox.'
-                : 'Records audio and transcribes via Whisper API (Groq, OpenAI). Works in all browsers.'
+                ? t('settings.sttBrowserDesc')
+                : t('settings.sttWhisperDesc')
             }}
           </p>
         </UFormField>
 
         <template v-if="settings.sttEngine === 'whisper'">
-          <UFormField label="Provider">
+          <UFormField :label="t('settings.sttProvider')">
             <USelectMenu
               :model-value="sttPreset"
               :items="sttPresetOptions"
@@ -289,20 +296,20 @@ async function clearAllConversations() {
             />
           </UFormField>
 
-          <UFormField label="API Key" required>
+          <UFormField :label="t('settings.apiKeyLabel')" required>
             <UInput
               v-model="settings.sttWhisperApiKey"
               type="password"
-              placeholder="Enter Whisper API key..."
+              :placeholder="t('settings.sttApiKeyPlaceholder')"
               class="w-full"
               size="sm"
             />
             <p v-if="sttPreset === 'groq'" class="text-xs text-[var(--ui-text-muted)] mt-1">
-              Get a free key at <a href="https://console.groq.com" target="_blank" class="underline">console.groq.com</a>
+              {{ t('settings.sttGroqNote') }} <a href="https://console.groq.com" target="_blank" class="underline">console.groq.com</a>
             </p>
           </UFormField>
 
-          <UFormField v-if="sttPreset === 'custom'" label="API URL">
+          <UFormField v-if="sttPreset === 'custom'" :label="t('settings.sttApiUrl')">
             <UInput
               v-model="settings.sttWhisperUrl"
               placeholder="https://api.example.com/v1/audio/transcriptions"
@@ -311,7 +318,7 @@ async function clearAllConversations() {
             />
           </UFormField>
 
-          <UFormField v-if="sttPreset === 'custom'" label="Model">
+          <UFormField v-if="sttPreset === 'custom'" :label="t('settings.sttModel')">
             <UInput
               v-model="settings.sttWhisperModel"
               placeholder="whisper-large-v3-turbo"
@@ -326,11 +333,11 @@ async function clearAllConversations() {
     <!-- Appearance -->
     <div class="space-y-3">
       <h3 class="text-[10px] font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-widest">
-        Appearance
+        {{ t('settings.appearance') }}
       </h3>
 
       <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg)] p-4 space-y-4">
-        <UFormField label="Color Mode">
+        <UFormField :label="t('settings.colorMode')">
           <div class="flex gap-2">
             <button
               v-for="opt in colorModeOptions"
@@ -346,6 +353,22 @@ async function clearAllConversations() {
             </button>
           </div>
         </UFormField>
+
+        <UFormField :label="t('settings.language')">
+          <div class="flex gap-2">
+            <button
+              v-for="opt in localeOptions"
+              :key="opt.value"
+              class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+              :class="settings.locale === opt.value
+                ? 'bg-[var(--ui-bg-inverted)] text-[var(--ui-bg)]'
+                : 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-accented)]'"
+              @click="settings.locale = opt.value"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+        </UFormField>
       </div>
     </div>
 
@@ -357,21 +380,21 @@ async function clearAllConversations() {
     >
       <UIcon v-if="!saving" name="i-lucide-save" class="size-4" />
       <UIcon v-else name="i-lucide-loader" class="size-4 animate-spin" />
-      Save Settings
+      {{ t('settings.save') }}
     </button>
 
     <!-- Danger Zone -->
     <div class="space-y-3">
       <h3 class="text-xs font-semibold text-red-500 uppercase tracking-wider">
-        Danger Zone
+        {{ t('settings.dangerZone') }}
       </h3>
 
       <div class="rounded-lg border border-red-500/30 bg-[var(--ui-bg)] p-4">
         <div class="flex items-center justify-between">
           <div>
-            <span class="text-sm font-medium">Delete All Conversations</span>
+            <span class="text-sm font-medium">{{ t('settings.deleteAll') }}</span>
             <p class="text-xs text-[var(--ui-text-muted)]">
-              Permanently remove all conversations and messages. This cannot be undone.
+              {{ t('settings.deleteAllDescription') }}
             </p>
           </div>
           <button
@@ -379,20 +402,20 @@ async function clearAllConversations() {
             class="px-3 py-1.5 text-xs font-medium rounded-lg border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors shrink-0"
             @click="showClearConfirm = true"
           >
-            Delete All
+            {{ t('settings.deleteAllButton') }}
           </button>
           <div v-else class="flex items-center gap-2 shrink-0">
             <button
               class="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
               @click="clearAllConversations"
             >
-              Confirm Delete
+              {{ t('settings.confirmDelete') }}
             </button>
             <button
               class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--ui-bg-elevated)] hover:bg-[var(--ui-bg-accented)] transition-colors"
               @click="showClearConfirm = false"
             >
-              Cancel
+              {{ t('project.cancel') }}
             </button>
           </div>
         </div>

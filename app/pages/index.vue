@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'default' })
 
+const { t } = useI18n()
 const projectsStore = useProjectsStore()
 const conversationsStore = useConversationsStore()
 const settings = useSettingsStore()
@@ -42,9 +43,9 @@ async function finishRename(id: string) {
 }
 
 async function deleteProject(project: { id: string; displayName: string }) {
-  if (!confirm(`Delete project "${project.displayName}"? Conversations will become unassigned.`)) return
+  if (!confirm(t('home.deleteConfirm', { name: project.displayName }))) return
   await projectsStore.remove(project.id)
-  toast.add({ title: `Project "${project.displayName}" deleted`, color: 'success' })
+  toast.add({ title: t('home.projectDeleted', { name: project.displayName }), color: 'success' })
 }
 </script>
 
@@ -57,9 +58,9 @@ async function deleteProject(project: { id: string; displayName: string }) {
           <div class="size-14 rounded-xl bg-[var(--ui-bg-elevated)] flex items-center justify-center mx-auto mb-4">
             <UIcon name="i-lucide-terminal" class="size-7 dark:invert opacity-80" />
           </div>
-          <h1 class="text-3xl font-bold tracking-tight">Welcome to Coder UI</h1>
+          <h1 class="text-3xl font-bold tracking-tight">{{ t('home.welcome') }}</h1>
           <p class="text-sm text-[var(--ui-text-muted)]">
-            Select a project to start chatting
+            {{ t('home.selectProject') }}
           </p>
         </div>
 
@@ -69,7 +70,7 @@ async function deleteProject(project: { id: string; displayName: string }) {
           @click="showCreateProject = true"
         >
           <UIcon name="i-lucide-folder-plus" class="size-4" />
-          Create New Project
+          {{ t('home.createProject') }}
         </button>
 
         <!-- Project list -->
@@ -115,14 +116,14 @@ async function deleteProject(project: { id: string; displayName: string }) {
             <div class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 class="p-1.5 rounded-md text-[var(--ui-text-muted)] hover:text-[var(--ui-text-highlighted)] hover:bg-[var(--ui-bg-accented)] transition-colors"
-                title="Rename"
+                :title="t('home.renameTitle')"
                 @click.stop="startRename(project)"
               >
                 <UIcon name="i-lucide-pencil" class="size-3.5" />
               </button>
               <button
                 class="p-1.5 rounded-md text-[var(--ui-text-muted)] hover:text-[var(--ui-color-error)] hover:bg-[var(--ui-bg-accented)] transition-colors"
-                title="Delete project"
+                :title="t('home.deleteTitle')"
                 @click.stop="deleteProject(project)"
               >
                 <UIcon name="i-lucide-trash-2" class="size-3.5" />
@@ -132,7 +133,7 @@ async function deleteProject(project: { id: string; displayName: string }) {
         </div>
 
         <p v-if="!projectsStore.list.length && !projectsStore.loading" class="text-xs text-[var(--ui-text-muted)]">
-          Or continue from the sidebar to resume an existing session
+          {{ t('home.orContinue') }}
         </p>
       </div>
 

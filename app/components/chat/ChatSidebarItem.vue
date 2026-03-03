@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import type { Conversation } from '~/stores/conversations'
 
+const { t } = useI18n()
+
 const props = defineProps<{
   conversation: Conversation
 }>()
 
 const conversationsStore = useConversationsStore()
+const settings = useSettingsStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -24,11 +27,11 @@ function timeAgo(dateStr: string): string {
   const diffHour = Math.floor(diffMin / 60)
   const diffDay = Math.floor(diffHour / 24)
 
-  if (diffSec < 60) return 'just now'
-  if (diffMin < 60) return `${diffMin}m ago`
-  if (diffHour < 24) return `${diffHour}h ago`
-  if (diffDay < 7) return `${diffDay}d ago`
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  if (diffSec < 60) return t('time.justNow')
+  if (diffMin < 60) return t('time.minutesAgo', { n: diffMin })
+  if (diffHour < 24) return t('time.hoursAgo', { n: diffHour })
+  if (diffDay < 7) return t('time.daysAgo', { n: diffDay })
+  return date.toLocaleDateString(settings.locale, { month: 'short', day: 'numeric' })
 }
 
 function startRename() {
@@ -101,14 +104,14 @@ async function deleteConversation() {
     <div v-if="editingId !== conversation.id" class="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
       <button
         class="p-1 rounded-md text-[var(--ui-text-dimmed)] hover:text-[var(--ui-text-highlighted)] transition-colors"
-        title="Rename"
+        :title="t('sidebar.rename')"
         @click.prevent="startRename"
       >
         <UIcon name="i-lucide-pencil" class="size-3" />
       </button>
       <button
         class="p-1 rounded-md text-[var(--ui-text-dimmed)] hover:text-[var(--ui-color-error)] transition-colors"
-        title="Delete"
+        :title="t('sidebar.delete')"
         @click.prevent="deleteConversation"
       >
         <UIcon name="i-lucide-x" class="size-3" />

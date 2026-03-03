@@ -34,14 +34,14 @@ onUnmounted(() => chat.clearConversation())
 
         <!-- Messages area (scrollable) -->
         <div class="flex-1 overflow-y-auto scrollbar-thin">
-          <div class="chat-max-w px-4 py-6">
+          <div class="px-4 py-6">
             <ChatMessages />
           </div>
         </div>
 
         <!-- Input area (sticky bottom) -->
         <div class="chat-input-area border-t border-[var(--ui-border-muted)]">
-          <div class="chat-max-w px-4 py-3">
+          <div class="px-4 py-3">
             <ChatInput />
           </div>
         </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'default' })
 
+const { t } = useI18n()
 const projectsStore = useProjectsStore()
 </script>
 
@@ -13,8 +14,8 @@ const projectsStore = useProjectsStore()
         </div>
         <p class="text-sm text-[var(--ui-text-muted)]">
           {{ projectsStore.activeProject
-            ? `Start a new conversation in ${projectsStore.activeProject.displayName}`
-            : 'Select a project or conversation to get started'
+            ? t('chat.startNew', { name: projectsStore.activeProject.displayName })
+            : t('chat.selectToStart')
           }}
         </p>
       </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PendingImage } from '~/stores/chat'
 
+const { t } = useI18n()
 const chat = useChatStore()
 const settings = useSettingsStore()
 const input = ref('')
@@ -162,7 +163,7 @@ function onDrop(e: DragEvent) {
     >
       <div class="text-center">
         <UIcon name="i-lucide-plus" class="size-8 text-[var(--ui-text-muted)] mx-auto mb-1" />
-        <p class="text-sm text-[var(--ui-text-muted)]">Drop files here</p>
+        <p class="text-sm text-[var(--ui-text-muted)]">{{ t('chat.dropFiles') }}</p>
       </div>
     </div>
 
@@ -182,14 +183,14 @@ function onDrop(e: DragEvent) {
         <span class="stt-typing-dot w-1.5 h-1.5 rounded-full bg-[var(--ui-text-muted)]" style="animation-delay: 0.2s" />
         <span class="stt-typing-dot w-1.5 h-1.5 rounded-full bg-[var(--ui-text-muted)]" style="animation-delay: 0.4s" />
       </div>
-      <span class="text-xs text-[var(--ui-text-muted)]">Transcribing...</span>
+      <span class="text-xs text-[var(--ui-text-muted)]">{{ t('chat.transcribing') }}</span>
     </div>
 
     <div class="flex items-end gap-2">
       <!-- File attach button (plus icon) -->
       <button
         class="size-10 rounded-full flex items-center justify-center shrink-0 transition-colors text-[var(--ui-text-dimmed)] hover:text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)]"
-        title="Attach files"
+        :title="t('chat.attachFiles')"
         @click="openFilePicker"
       >
         <UIcon name="i-lucide-plus" class="size-5" />
@@ -208,7 +209,7 @@ function onDrop(e: DragEvent) {
         <textarea
           ref="textareaRef"
           v-model="input"
-          placeholder="Type a message..."
+          :placeholder="t('chat.placeholder')"
           class="w-full min-h-11 bg-[var(--ui-bg-elevated)] text-sm text-[var(--ui-text-highlighted)] border-0 rounded-2xl pl-4 pr-10 py-2.5 font-medium resize-none outline-none leading-6 overflow-y-hidden transition-[height] duration-100 placeholder:text-[var(--ui-text-muted)] focus:ring-1 focus:ring-[var(--ui-border-active)]"
           :disabled="false"
           rows="1"
@@ -256,7 +257,7 @@ function onDrop(e: DragEvent) {
         v-model="selectedModelValue"
         :items="modelSelectItems"
         value-key="value"
-        placeholder="Select model"
+        :placeholder="t('chat.selectModel')"
         size="xs"
         class="min-w-48"
         variant="ghost"

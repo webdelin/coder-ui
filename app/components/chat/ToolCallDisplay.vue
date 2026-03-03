@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { t } = useI18n()
+
 const props = defineProps<{
   name: string
   input: Record<string, unknown>
@@ -28,13 +30,13 @@ const toolIcon = computed(() => {
 const summary = computed(() => {
   switch (props.name) {
     case 'Bash':
-      return (props.input.command as string) || 'Running command...'
+      return (props.input.command as string) || t('tool.runningCommand')
     case 'Edit':
-      return (props.input.file_path as string) || 'file'
+      return (props.input.file_path as string) || t('tool.file')
     case 'Read':
-      return (props.input.file_path as string) || 'file'
+      return (props.input.file_path as string) || t('tool.file')
     case 'Write':
-      return (props.input.file_path as string) || 'file'
+      return (props.input.file_path as string) || t('tool.file')
     case 'Glob':
       return (props.input.pattern as string) || ''
     case 'Grep':
@@ -44,7 +46,7 @@ const summary = computed(() => {
     case 'WebSearch':
       return (props.input.query as string) || ''
     case 'TodoWrite':
-      return 'Update todo list'
+      return t('tool.updateTodo')
     default:
       return props.name
   }
@@ -93,7 +95,7 @@ const truncatedResult = computed(() => {
       <!-- Input section -->
       <div>
         <h4 class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wide mb-1.5">
-          {{ name === 'Bash' ? 'Command' : 'Input' }}
+          {{ name === 'Bash' ? t('tool.command') : t('tool.input') }}
         </h4>
         <div class="bg-[var(--ui-bg)] rounded border border-[var(--ui-border)] p-3">
           <!-- Bash -->
@@ -111,7 +113,7 @@ const truncatedResult = computed(() => {
 
       <!-- Result section -->
       <div v-if="result">
-        <h4 class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wide mb-1.5">Result</h4>
+        <h4 class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wide mb-1.5">{{ t('tool.result') }}</h4>
         <div class="bg-[var(--ui-bg)] rounded border border-[var(--ui-border)] p-3 max-h-48 overflow-y-auto scrollbar-thin">
           <pre class="text-xs text-[var(--ui-text-highlighted)]">{{ truncatedResult }}</pre>
         </div>

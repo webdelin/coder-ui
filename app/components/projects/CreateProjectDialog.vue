@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const open = defineModel<boolean>()
 const projectsStore = useProjectsStore()
 const toast = useToast()
@@ -10,7 +11,7 @@ const creating = ref(false)
 
 async function submit() {
   if (!path.value.trim()) {
-    error.value = 'Path is required'
+    error.value = t('project.pathRequired')
     return
   }
   creating.value = true
@@ -25,9 +26,9 @@ async function submit() {
     displayName.value = ''
     projectsStore.toggleExpanded(project.id)
     projectsStore.setActive(project.id)
-    toast.add({ title: `Project "${project.displayName}" created`, color: 'success' })
+    toast.add({ title: t('project.created', { name: project.displayName }), color: 'success' })
   } catch (e: any) {
-    error.value = e.data?.message || e.message || 'Failed to create project'
+    error.value = e.data?.message || e.message || t('project.createFailed')
   } finally {
     creating.value = false
   }
@@ -37,14 +38,13 @@ async function submit() {
 <template>
   <UModal
     v-model:open="open"
-    title="Create New Project"
-    description="Link a directory on your filesystem as a project."
+    :title="t('project.createTitle')"
+    :description="t('project.createDescription')"
     :ui="{ footer: 'justify-end' }"
   >
-    <!-- No trigger button — opened externally via v-model -->
     <template #body>
       <div class="space-y-4">
-        <UFormField label="Project Path" required>
+        <UFormField :label="t('project.pathLabel')" required>
           <UInput
             v-model="path"
             placeholder="/home/user/my-project"
@@ -55,7 +55,7 @@ async function submit() {
           />
         </UFormField>
 
-        <UFormField label="Display Name" hint="Optional">
+        <UFormField :label="t('project.displayNameLabel')" :hint="t('project.displayNameHint')">
           <UInput
             v-model="displayName"
             placeholder="My Project"
@@ -72,13 +72,13 @@ async function submit() {
 
     <template #footer="{ close }">
       <UButton
-        label="Cancel"
+        :label="t('project.cancel')"
         color="neutral"
         variant="outline"
         @click="close"
       />
       <UButton
-        label="Create Project"
+        :label="t('project.createButton')"
         icon="i-lucide-folder-plus"
         :loading="creating"
         @click="submit"

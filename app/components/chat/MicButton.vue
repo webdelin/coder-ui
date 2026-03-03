@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { t } = useI18n()
+
 const emit = defineEmits<{
   transcript: [text: string]
   interim: [text: string]
@@ -40,7 +42,8 @@ function initBrowserSTT(SR: any) {
   recognition = new SR()
   recognition.continuous = true
   recognition.interimResults = true
-  recognition.lang = navigator.language || 'de-DE'
+  const langMap: Record<string, string> = { en: 'en-US', ru: 'ru-RU', de: 'de-DE' }
+  recognition.lang = langMap[settings.locale] || navigator.language || 'en-US'
 
   recognition.onresult = (event: any) => {
     let interim = ''
@@ -60,14 +63,14 @@ function initBrowserSTT(SR: any) {
     isRecording.value = false
 
     const msgs: Record<string, string> = {
-      'not-allowed': 'Mikrofon verweigert.',
-      'no-speech': 'Keine Sprache erkannt.',
-      'audio-capture': 'Kein Mikrofon gefunden.',
-      'network': 'Netzwerkfehler bei Spracherkennung.',
-      'service-not-allowed': 'Spracherkennung blockiert.',
+      'not-allowed': t('mic.denied'),
+      'no-speech': t('mic.noSpeech'),
+      'audio-capture': t('mic.noMic'),
+      'network': t('mic.networkError'),
+      'service-not-allowed': t('mic.blocked'),
       'aborted': '',
     }
-    const msg = msgs[event.error] ?? `Fehler: ${event.error}`
+    const msg = msgs[event.error] ?? `${event.error}`
     if (msg) {
       errorMsg.value = msg
       toast.add({ title: msg, color: 'error' })
@@ -111,8 +114,8 @@ async function toggle() {
     stream = await navigator.mediaDevices.getUserMedia({ audio: true })
   } catch {
     status.value = 'error'
-    errorMsg.value = 'Mikrofon-Zugriff verweigert'
-    toast.add({ title: 'Mikrofon-Zugriff verweigert', color: 'error' })
+    errorMsg.value = t('mic.accessDenied')
+    toast.add({ title: t('mic.accessDenied'), color: 'error' })
     return
   }
 
@@ -120,7 +123,7 @@ async function toggle() {
     startMediaRecorder(stream)
   } else {
     // Release stream for browser SpeechRecognition
-    stream.getTracks().forEach(t => t.stop())
+    stream.getTracks().forEach(tr => tr.stop())
     startBrowserSTT()
   }
 }
@@ -128,8 +131,8 @@ async function toggle() {
 function startBrowserSTT() {
   if (!recognition) {
     status.value = 'error'
-    errorMsg.value = 'SpeechRecognition nicht verfügbar'
-    toast.add({ title: 'SpeechRecognition nicht verfügbar', color: 'error' })
+    errorMsg.value = t('mic.unavailable')
+    toast.add({ title: t('mic.unavailable'), color: 'error' })
     return
   }
 
@@ -139,7 +142,7 @@ function startBrowserSTT() {
   } catch (e: any) {
     status.value = 'error'
     errorMsg.value = e.message
-    toast.add({ title: `Start fehlgeschlagen: ${e.message}`, color: 'error' })
+    toast.add({ title: t('mic.startFailed', { message: e.message }), color: 'error' })
   }
 }
 
@@ -161,7 +164,7 @@ function startMediaRecorder(stream: MediaStream) {
 
   mediaRecorder.onstop = async () => {
     // Stop all tracks to release the mic
-    stream.getTracks().forEach(t => t.stop())
+    stream.getTracks().forEach(tr => tr.stop())
 
     if (!audioChunks.length) {
       status.value = 'idle'
@@ -186,24 +189,24 @@ function startMediaRecorder(stream: MediaStream) {
         emit('interim', '')
       } else {
         emit('interim', '')
-        errorMsg.value = 'Keine Sprache erkannt'
+        errorMsg.value = t('mic.noSpeechDetected')
       }
       status.value = 'idle'
     } catch (e: any) {
       console.error('[MicButton] Whisper transcription failed:', e)
       status.value = 'error'
       emit('interim', '')
-      const msg = e.data?.message || e.message || 'Transkription fehlgeschlagen'
+      const msg = e.data?.message || e.message || t('mic.transcriptionFailed')
       errorMsg.value = msg
       toast.add({ title: msg, color: 'error' })
     }
   }
 
   mediaRecorder.onerror = () => {
-    stream.getTracks().forEach(t => t.stop())
+    stream.getTracks().forEach(tr => tr.stop())
     status.value = 'error'
     isRecording.value = false
-    errorMsg.value = 'Aufnahme fehlgeschlagen'
+    errorMsg.value = t('mic.recordingFailed')
   }
 
   mediaRecorder.start(1000) // Collect chunks every second
@@ -239,7 +242,7 @@ onUnmounted(() => {
         : status === 'error'
           ? 'text-[var(--ui-color-error)]'
           : 'text-[var(--ui-text-dimmed)] hover:text-[var(--ui-text-muted)]'"
-    :title="errorMsg || (isRecording ? 'Aufnahme stoppen' : status === 'transcribing' ? 'Transkribiere...' : 'Spracheingabe')"
+    :title="errorMsg || (isRecording ? t('mic.stopRecording') : status === 'transcribing' ? t('chat.transcribing') : t('mic.voiceInput'))"
     :disabled="status === 'transcribing'"
     @click="toggle"
   >

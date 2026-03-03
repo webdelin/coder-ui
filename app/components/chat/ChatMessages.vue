@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const chat = useChatStore()
 const settings = useSettingsStore()
 const tts = useTTSStore()
@@ -56,11 +57,11 @@ const displayMessages = computed(() => {
 })
 
 // Thinking phrases like claude-code-web
-const thinkingPhrases = [
-  'Thinking...', 'Pondering...', 'Processing...', 'Analyzing...',
-  'Reflecting...', 'Evaluating...', 'Considering...', 'Reasoning...',
-]
-const thinkingPhrase = ref(thinkingPhrases[0])
+const thinkingPhraseKeys = [
+  'thinking.thinking', 'thinking.pondering', 'thinking.processing', 'thinking.analyzing',
+  'thinking.reflecting', 'thinking.evaluating', 'thinking.considering', 'thinking.reasoning',
+] as const
+const thinkingPhrase = ref(t(thinkingPhraseKeys[0]))
 let phraseInterval: ReturnType<typeof setInterval> | undefined
 
 // Auto-read: when streaming finishes, speak the last assistant message
@@ -76,9 +77,9 @@ watch(() => chat.isStreaming, (streaming, wasStreaming) => {
 
 watch(() => chat.isStreaming, (streaming) => {
   if (streaming) {
-    thinkingPhrase.value = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)]
+    thinkingPhrase.value = t(thinkingPhraseKeys[Math.floor(Math.random() * thinkingPhraseKeys.length)])
     phraseInterval = setInterval(() => {
-      thinkingPhrase.value = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)]
+      thinkingPhrase.value = t(thinkingPhraseKeys[Math.floor(Math.random() * thinkingPhraseKeys.length)])
     }, 3000)
   } else if (phraseInterval) {
     clearInterval(phraseInterval)
@@ -98,7 +99,7 @@ function injectCopyButtons() {
     const btn = document.createElement('button')
     btn.className = 'code-copy-btn'
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>'
-    btn.title = 'Copy code'
+    btn.title = t('code.copy')
 
     btn.addEventListener('click', () => {
       const code = pre.querySelector('code')?.textContent || pre.textContent || ''

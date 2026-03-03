@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const projectsStore = useProjectsStore()
 const conversationsStore = useConversationsStore()
 const settings = useSettingsStore()
@@ -52,7 +53,7 @@ async function newChat() {
       <template #default="{ collapsed }">
         <div class="flex gap-1.5 mb-3">
           <UButton
-            :label="collapsed ? undefined : 'New Chat'"
+            :label="collapsed ? undefined : t('sidebar.newChat')"
             icon="i-lucide-plus"
             color="neutral"
             variant="outline"
@@ -69,14 +70,14 @@ async function newChat() {
             variant="outline"
             square
             size="sm"
-            title="Create New Project"
+            :title="t('home.createProject')"
             @click="showCreateProject = true"
           />
         </div>
 
         <div v-if="!collapsed">
           <div class="text-[10px] font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-widest mb-2 px-2">
-            Projects
+            {{ t('sidebar.projects') }}
           </div>
           <ChatSidebar />
         </div>
@@ -85,7 +86,7 @@ async function newChat() {
       <template #footer="{ collapsed }">
         <div class="flex flex-col gap-0.5">
           <UButton
-            :label="collapsed ? undefined : 'Settings'"
+            :label="collapsed ? undefined : t('sidebar.settings')"
             icon="i-lucide-settings"
             variant="ghost"
             color="neutral"

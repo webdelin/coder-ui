@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const projectsStore = useProjectsStore()
 const conversationsStore = useConversationsStore()
 const settings = useSettingsStore()
@@ -54,7 +55,7 @@ function handleProjectClick(projectId: string) {
           @click.stop="newChatInProject(project.id)"
         >
           <UIcon name="i-lucide-plus" class="size-3" />
-          New chat
+          {{ t('sidebar.newChatShort') }}
         </button>
 
         <!-- Conversations for this project -->
@@ -69,7 +70,7 @@ function handleProjectClick(projectId: string) {
           v-if="!conversationsStore.forProject(project.id).length"
           class="text-[10px] text-[var(--ui-text-dimmed)] px-2 py-1"
         >
-          No conversations yet
+          {{ t('sidebar.noConversations') }}
         </p>
       </div>
     </div>
@@ -77,7 +78,7 @@ function handleProjectClick(projectId: string) {
     <!-- Unassigned conversations -->
     <div v-if="conversationsStore.unassigned().length" class="mt-3 pt-3 border-t border-[var(--ui-border-muted)]">
       <div class="text-[10px] font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-widest mb-1.5 px-2">
-        Unassigned
+        {{ t('sidebar.unassigned') }}
       </div>
       <ChatSidebarItem
         v-for="conv in conversationsStore.unassigned()"
@@ -92,8 +93,8 @@ function handleProjectClick(projectId: string) {
       class="px-2 py-8 text-center"
     >
       <UIcon name="i-lucide-folder-plus" class="size-7 text-[var(--ui-text-dimmed)] mx-auto mb-2" />
-      <p class="text-xs text-[var(--ui-text-muted)]">No projects yet</p>
-      <p class="text-[10px] text-[var(--ui-text-dimmed)] mt-1">Create a project to get started</p>
+      <p class="text-xs text-[var(--ui-text-muted)]">{{ t('sidebar.noProjects') }}</p>
+      <p class="text-[10px] text-[var(--ui-text-dimmed)] mt-1">{{ t('sidebar.createToStart') }}</p>
     </div>
   </nav>
 </template>
