@@ -14,13 +14,20 @@ export default defineEventHandler(async (event) => {
     history: Array<{ role: string; content: string }>
   }>(event)
 
-  // 1. Load API key from DB
-  const [settings] = await db
+  // 1. Load API key from DB, fall back to env vars
+  const [provSettings] = await db
     .select()
     .from(providerSettings)
     .where(eq(providerSettings.provider, body.provider))
 
-  if (!settings?.apiKey) {
+  const envKeyMap: Record<string, string> = {
+    anthropic: 'ANTHROPIC_API_KEY',
+    minimax: 'MINIMAX_API_KEY',
+    zai: 'ZAI_API_KEY',
+  }
+  const apiKey = provSettings?.apiKey || process.env[envKeyMap[body.provider] ?? ''] || ''
+
+  if (!apiKey) {
     throw createError({
       statusCode: 400,
       message: `No API key configured for ${body.provider}. Go to Settings to add one.`,
@@ -72,7 +79,7 @@ export default defineEventHandler(async (event) => {
       systemPrompt: body.systemPrompt,
       model: body.model,
     },
-    settings.apiKey,
+    apiKey,
   )
 
   const eventStream = createEventStream(event)

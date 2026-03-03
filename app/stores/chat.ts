@@ -45,6 +45,11 @@ export const useChatStore = defineStore('chat', () => {
     error.value = null
     toolCalls.value = []
 
+    // Restore provider/model from conversation
+    if (data.provider) {
+      settings.setModel(data.provider, data.model || settings.activeModel)
+    }
+
     // Extract Claude Code session ID if present
     if (data.systemPrompt?.startsWith('claude-code-session:')) {
       claudeSessionId.value = data.systemPrompt.replace('claude-code-session:', '')
@@ -113,7 +118,13 @@ export const useChatStore = defineStore('chat', () => {
     })
 
     if (!response.ok) {
-      error.value = await response.text()
+      const text = await response.text()
+      try {
+        const parsed = JSON.parse(text)
+        error.value = parsed.message || parsed.statusMessage || text
+      } catch {
+        error.value = text
+      }
       return
     }
 
@@ -173,7 +184,13 @@ export const useChatStore = defineStore('chat', () => {
     })
 
     if (!response.ok) {
-      error.value = await response.text()
+      const text = await response.text()
+      try {
+        const parsed = JSON.parse(text)
+        error.value = parsed.message || parsed.statusMessage || text
+      } catch {
+        error.value = text
+      }
       return
     }
 
