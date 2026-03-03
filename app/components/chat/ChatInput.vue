@@ -8,6 +8,7 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const pendingImages = ref<PendingImage[]>([])
 const isDragging = ref(false)
+const micButtonRef = ref<InstanceType<typeof import('./MicButton.vue').default> | null>(null)
 
 const modelSelectItems = computed(() =>
   settings.availableModels.map(m => ({
@@ -24,6 +25,9 @@ const selectedModelValue = computed({
     settings.setModel(provider as any, model)
   },
 })
+
+const micStatus = computed(() => micButtonRef.value?.status ?? 'idle')
+const micIsRecording = computed(() => micButtonRef.value?.isRecording ?? false)
 
 function submit() {
   if (!input.value.trim() && !pendingImages.value.length) return
@@ -54,7 +58,7 @@ function autoResize(e: Event) {
   el.style.height = Math.min(el.scrollHeight, 200) + 'px'
 }
 
-// Image handling
+// File handling
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 const MAX_SIZE = 20 * 1024 * 1024 // 20MB
 
@@ -157,8 +161,8 @@ function onDrop(e: DragEvent) {
       class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border-2 border-dashed border-[var(--ui-border-active)] bg-[var(--ui-bg-elevated)]/80 backdrop-blur-sm"
     >
       <div class="text-center">
-        <UIcon name="i-lucide-image-plus" class="size-8 text-[var(--ui-text-muted)] mx-auto mb-1" />
-        <p class="text-sm text-[var(--ui-text-muted)]">Drop images here</p>
+        <UIcon name="i-lucide-plus" class="size-8 text-[var(--ui-text-muted)] mx-auto mb-1" />
+        <p class="text-sm text-[var(--ui-text-muted)]">Drop files here</p>
       </div>
     </div>
 
@@ -168,14 +172,27 @@ function onDrop(e: DragEvent) {
       @remove="removeImage"
     />
 
-    <div class="flex items-end gap-3">
-      <!-- Image upload button -->
+    <!-- Transcription typing indicator -->
+    <div
+      v-if="micStatus === 'transcribing'"
+      class="flex items-center gap-2 px-4 py-2"
+    >
+      <div class="flex items-center gap-1">
+        <span class="stt-typing-dot w-1.5 h-1.5 rounded-full bg-[var(--ui-text-muted)]" />
+        <span class="stt-typing-dot w-1.5 h-1.5 rounded-full bg-[var(--ui-text-muted)]" style="animation-delay: 0.2s" />
+        <span class="stt-typing-dot w-1.5 h-1.5 rounded-full bg-[var(--ui-text-muted)]" style="animation-delay: 0.4s" />
+      </div>
+      <span class="text-xs text-[var(--ui-text-muted)]">Transcribing...</span>
+    </div>
+
+    <div class="flex items-end gap-2">
+      <!-- File attach button (plus icon) -->
       <button
-        class="size-12 rounded-full bg-[var(--ui-bg-elevated)] flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity text-[var(--ui-text-muted)]"
-        title="Attach image"
+        class="size-10 rounded-full flex items-center justify-center shrink-0 transition-colors text-[var(--ui-text-dimmed)] hover:text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)]"
+        title="Attach files"
         @click="openFilePicker"
       >
-        <UIcon name="i-lucide-image-plus" class="size-5" />
+        <UIcon name="i-lucide-plus" class="size-5" />
       </button>
       <input
         ref="fileInputRef"
@@ -186,13 +203,13 @@ function onDrop(e: DragEvent) {
         @change="onFileSelected"
       >
 
-      <!-- Input area -->
-      <div class="flex-1 relative">
+      <!-- Input area with mic inside -->
+      <div class="flex-1 relative flex items-end">
         <textarea
           ref="textareaRef"
           v-model="input"
           placeholder="Type a message..."
-          class="w-full min-h-12 bg-[var(--ui-bg-elevated)] text-sm text-[var(--ui-text-highlighted)] border-0 rounded-3xl px-4 py-3 font-medium resize-none outline-none leading-6 overflow-y-hidden transition-[height] duration-100 placeholder:text-[var(--ui-text-muted)] focus:ring-2 focus:ring-[var(--ui-border-active)]"
+          class="w-full min-h-11 bg-[var(--ui-bg-elevated)] text-sm text-[var(--ui-text-highlighted)] border-0 rounded-2xl pl-4 pr-10 py-2.5 font-medium resize-none outline-none leading-6 overflow-y-hidden transition-[height] duration-100 placeholder:text-[var(--ui-text-muted)] focus:ring-1 focus:ring-[var(--ui-border-active)]"
           :disabled="false"
           rows="1"
           autofocus
@@ -200,26 +217,31 @@ function onDrop(e: DragEvent) {
           @input="autoResize"
           @paste="handlePaste"
         />
+        <!-- Mic button inside input -->
+        <div class="absolute right-2.5 bottom-2.5">
+          <ChatMicButton
+            ref="micButtonRef"
+            @transcript="onTranscript"
+            @interim="onInterim"
+          />
+        </div>
       </div>
-
-      <!-- Mic button -->
-      <ChatMicButton @transcript="onTranscript" @interim="onInterim" />
 
       <!-- Send / Stop button -->
       <button
         v-if="chat.isStreaming"
-        class="size-12 rounded-full bg-[var(--ui-bg-elevated)] flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity"
+        class="size-10 rounded-full bg-[var(--ui-bg-elevated)] flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity"
         @click="chat.stopStreaming()"
       >
-        <div class="w-3.5 h-3.5 bg-[var(--ui-text-highlighted)] rounded-sm" />
+        <div class="w-3 h-3 bg-[var(--ui-text-highlighted)] rounded-sm" />
       </button>
       <button
         v-else
         :disabled="!input.trim() && !pendingImages.length"
-        class="size-12 rounded-full bg-[var(--ui-bg-inverted)] text-[var(--ui-bg)] flex items-center justify-center shrink-0 transition-opacity disabled:opacity-30"
+        class="size-10 rounded-full bg-[var(--ui-bg-inverted)] text-[var(--ui-bg)] flex items-center justify-center shrink-0 transition-opacity disabled:opacity-30"
         @click="submit"
       >
-        <UIcon name="i-lucide-send-horizontal" class="size-5" />
+        <UIcon name="i-lucide-arrow-up" class="size-5" />
       </button>
     </div>
 

@@ -13,6 +13,9 @@ let recognition: any = null
 let mediaRecorder: MediaRecorder | null = null
 let audioChunks: Blob[] = []
 
+// Expose status to parent
+defineExpose({ status, isRecording })
+
 // Determine which STT engine to use
 const hasBrowserSTT = ref(false)
 
@@ -166,7 +169,7 @@ function startMediaRecorder(stream: MediaStream) {
     }
 
     status.value = 'transcribing'
-    emit('interim', 'Transcribing...')
+    emit('interim', '')
 
     try {
       const audioBlob = new Blob(audioChunks, { type: mediaRecorder?.mimeType || 'audio/webm' })
@@ -227,42 +230,36 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center gap-1">
-    <button
-      class="size-12 rounded-full flex items-center justify-center shrink-0 transition-all"
-      :class="isRecording
-        ? 'bg-red-500 text-white mic-pulse'
-        : status === 'transcribing'
-          ? 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text-highlighted)] animate-pulse'
-          : status === 'error'
-            ? 'bg-[var(--ui-bg-elevated)] text-[var(--ui-color-error)]'
-            : 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text-muted)] hover:opacity-80'"
-      :title="errorMsg || (isRecording ? 'Aufnahme stoppen' : status === 'transcribing' ? 'Transkribiere...' : 'Spracheingabe starten')"
-      :disabled="status === 'transcribing'"
-      @click="toggle"
-    >
-      <UIcon
-        v-if="status === 'transcribing'"
-        name="i-lucide-loader"
-        class="size-5 animate-spin"
-      />
-      <UIcon
-        v-else
-        :name="isRecording ? 'i-lucide-mic-off' : 'i-lucide-mic'"
-        class="size-5"
-      />
-    </button>
-    <span
-      v-if="errorMsg && !isRecording"
-      class="text-[9px] text-[var(--ui-color-error)] max-w-20 text-center leading-tight"
-    >
-      {{ errorMsg }}
-    </span>
-    <span
-      v-else-if="useServerSTT && !isRecording && status === 'idle'"
-      class="text-[9px] text-[var(--ui-text-dimmed)] max-w-20 text-center leading-tight"
-    >
-      {{ settings.sttEngine === 'local' ? 'Local' : 'Whisper' }}
-    </span>
-  </div>
+  <button
+    class="flex items-center justify-center shrink-0 transition-all"
+    :class="isRecording
+      ? 'text-red-500'
+      : status === 'transcribing'
+        ? 'text-[var(--ui-text-muted)] animate-pulse'
+        : status === 'error'
+          ? 'text-[var(--ui-color-error)]'
+          : 'text-[var(--ui-text-dimmed)] hover:text-[var(--ui-text-muted)]'"
+    :title="errorMsg || (isRecording ? 'Aufnahme stoppen' : status === 'transcribing' ? 'Transkribiere...' : 'Spracheingabe')"
+    :disabled="status === 'transcribing'"
+    @click="toggle"
+  >
+    <!-- Sound wave animation while recording -->
+    <div v-if="isRecording" class="flex items-center gap-[3px] h-5">
+      <span class="stt-bar w-[3px] rounded-full bg-red-500" />
+      <span class="stt-bar w-[3px] rounded-full bg-red-500" style="animation-delay: 0.15s" />
+      <span class="stt-bar w-[3px] rounded-full bg-red-500" style="animation-delay: 0.3s" />
+      <span class="stt-bar w-[3px] rounded-full bg-red-500" style="animation-delay: 0.45s" />
+      <span class="stt-bar w-[3px] rounded-full bg-red-500" style="animation-delay: 0.6s" />
+    </div>
+    <UIcon
+      v-else-if="status === 'transcribing'"
+      name="i-lucide-loader"
+      class="size-[18px] animate-spin"
+    />
+    <UIcon
+      v-else
+      name="i-lucide-mic"
+      class="size-[18px]"
+    />
+  </button>
 </template>
