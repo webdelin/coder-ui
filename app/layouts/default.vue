@@ -1,11 +1,14 @@
 <script setup lang="ts">
+const projectsStore = useProjectsStore()
 const conversationsStore = useConversationsStore()
 const settings = useSettingsStore()
 const router = useRouter()
 const colorMode = useColorMode()
+const showCreateProject = ref(false)
 
 onMounted(async () => {
   await Promise.all([
+    projectsStore.fetchAll(),
     conversationsStore.fetchAll(),
     settings.fetchModels(),
     settings.loadFromServer(),
@@ -16,6 +19,7 @@ async function newChat() {
   const conv = await conversationsStore.create(
     settings.activeProvider,
     settings.activeModel,
+    projectsStore.activeProjectId || undefined,
   )
   router.push(`/chat/${conv.id}`)
 }
@@ -54,19 +58,32 @@ const colorModeIcon = computed(() =>
       </template>
 
       <template #default="{ collapsed }">
-        <UButton
-          :label="collapsed ? undefined : 'New Chat'"
-          icon="i-lucide-plus"
-          color="primary"
-          block
-          :square="collapsed"
-          class="mb-2"
-          @click="newChat"
-        />
+        <div class="flex gap-1 mb-2">
+          <UButton
+            :label="collapsed ? undefined : 'New Chat'"
+            icon="i-lucide-plus"
+            color="primary"
+            :block="collapsed"
+            :square="collapsed"
+            class="flex-1"
+            size="sm"
+            @click="newChat"
+          />
+          <UButton
+            v-if="!collapsed"
+            icon="i-lucide-folder-plus"
+            color="neutral"
+            variant="outline"
+            square
+            size="sm"
+            title="Create New Project"
+            @click="showCreateProject = true"
+          />
+        </div>
 
         <div v-if="!collapsed" class="mt-1">
-          <div class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wider mb-2 px-2">
-            Conversations
+          <div class="text-[10px] font-semibold text-[var(--ui-text-muted)] uppercase tracking-wider mb-1.5 px-2">
+            Projects
           </div>
           <ChatSidebar />
         </div>
@@ -99,5 +116,8 @@ const colorModeIcon = computed(() =>
     </UDashboardSidebar>
 
     <slot />
+
+    <!-- Create Project Dialog -->
+    <ProjectsCreateProjectDialog v-model="showCreateProject" />
   </UDashboardGroup>
 </template>

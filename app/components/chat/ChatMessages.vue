@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const chat = useChatStore()
 const settings = useSettingsStore()
+const tts = useTTSStore()
 
 // Parse Claude Code rich content from persisted messages
 function parseContent(content: string): { text: string; toolCalls: any[] } {
@@ -24,6 +25,7 @@ const displayMessages = computed(() => {
         role: 'assistant' as const,
         text,
         toolCalls,
+        images: [] as string[],
         isClaudeCode: true,
       }
     }
@@ -33,6 +35,7 @@ const displayMessages = computed(() => {
       role: m.role as 'user' | 'assistant',
       text: m.content,
       toolCalls: [] as any[],
+      images: m.images ?? [],
       isClaudeCode: false,
     }
   })
@@ -44,6 +47,7 @@ const displayMessages = computed(() => {
       role: 'assistant',
       text: chat.streamingContent,
       toolCalls: chat.toolCalls,
+      images: [],
       isClaudeCode: settings.activeProvider === 'claude-code',
     })
   }
@@ -59,6 +63,17 @@ const thinkingPhrases = [
 const thinkingPhrase = ref(thinkingPhrases[0])
 let phraseInterval: ReturnType<typeof setInterval> | undefined
 
+// Auto-read: when streaming finishes, speak the last assistant message
+watch(() => chat.isStreaming, (streaming, wasStreaming) => {
+  if (!streaming && wasStreaming) {
+    const lastMsg = chat.messages[chat.messages.length - 1]
+    if (lastMsg?.role === 'assistant') {
+      const { text } = parseContent(lastMsg.content)
+      tts.autoSpeak(text, lastMsg.id)
+    }
+  }
+})
+
 watch(() => chat.isStreaming, (streaming) => {
   if (streaming) {
     thinkingPhrase.value = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)]
@@ -70,13 +85,55 @@ watch(() => chat.isStreaming, (streaming) => {
   }
 })
 
+// Inject copy buttons into code blocks
+const messagesContainer = ref<HTMLElement | null>(null)
+
+function injectCopyButtons() {
+  if (!messagesContainer.value) return
+  const preBlocks = messagesContainer.value.querySelectorAll('pre:not([data-copy-injected])')
+  for (const pre of preBlocks) {
+    pre.setAttribute('data-copy-injected', 'true')
+    pre.classList.add('code-block-wrapper')
+
+    const btn = document.createElement('button')
+    btn.className = 'code-copy-btn'
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>'
+    btn.title = 'Copy code'
+
+    btn.addEventListener('click', () => {
+      const code = pre.querySelector('code')?.textContent || pre.textContent || ''
+      navigator.clipboard.writeText(code).then(() => {
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+        btn.classList.add('copied')
+        setTimeout(() => {
+          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>'
+          btn.classList.remove('copied')
+        }, 2000)
+      })
+    })
+
+    pre.appendChild(btn)
+  }
+}
+
+let copyObserver: MutationObserver | undefined
+
+onMounted(() => {
+  // Watch for new code blocks being rendered by MDC
+  if (messagesContainer.value) {
+    copyObserver = new MutationObserver(() => injectCopyButtons())
+    copyObserver.observe(messagesContainer.value, { childList: true, subtree: true })
+  }
+})
+
 onUnmounted(() => {
   if (phraseInterval) clearInterval(phraseInterval)
+  copyObserver?.disconnect()
 })
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div ref="messagesContainer" class="space-y-4">
     <!-- Messages -->
     <div
       v-for="message in displayMessages"
@@ -86,6 +143,15 @@ onUnmounted(() => {
     >
       <!-- User message -->
       <div v-if="message.role === 'user'" class="message-bubble user-bubble">
+        <!-- Attached images -->
+        <div v-if="message.images?.length" class="flex flex-wrap gap-1.5 mb-2">
+          <img
+            v-for="(imgUrl, idx) in message.images"
+            :key="idx"
+            :src="imgUrl"
+            class="size-20 rounded-lg object-cover"
+          >
+        </div>
         <p class="whitespace-pre-wrap text-sm">{{ message.text }}</p>
       </div>
 

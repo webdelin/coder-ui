@@ -19,7 +19,11 @@ export const useSettingsStore = defineStore('settings', () => {
   const activeModel = ref<string>('claude-sonnet-4-6')
   const systemPrompt = ref<string>('')
   const ttsEnabled = ref<boolean>(true)
+  const ttsEngine = ref<'local' | 'minimax'>('local')
   const ttsVoice = ref<string>('male-qn-qingse')
+  const ttsLocalVoice = ref<string>('')
+  const ttsSpeed = ref<number>(1.0)
+  const ttsAutoRead = ref<boolean>(false)
 
   const providers = ref<Record<string, ProviderConfig>>({
     'claude-code': { apiKey: '', groupId: '', enabled: true },
@@ -73,7 +77,11 @@ export const useSettingsStore = defineStore('settings', () => {
     if (data.app.activeModel) activeModel.value = data.app.activeModel
     if (data.app.systemPrompt) systemPrompt.value = data.app.systemPrompt
     if (data.app.ttsEnabled) ttsEnabled.value = data.app.ttsEnabled === 'true'
+    if (data.app.ttsEngine) ttsEngine.value = data.app.ttsEngine as 'local' | 'minimax'
     if (data.app.ttsVoice) ttsVoice.value = data.app.ttsVoice
+    if (data.app.ttsLocalVoice) ttsLocalVoice.value = data.app.ttsLocalVoice
+    if (data.app.ttsSpeed) ttsSpeed.value = parseFloat(data.app.ttsSpeed)
+    if (data.app.ttsAutoRead) ttsAutoRead.value = data.app.ttsAutoRead === 'true'
   }
 
   async function saveToServer() {
@@ -86,7 +94,11 @@ export const useSettingsStore = defineStore('settings', () => {
           activeModel: activeModel.value,
           systemPrompt: systemPrompt.value,
           ttsEnabled: String(ttsEnabled.value),
+          ttsEngine: ttsEngine.value,
           ttsVoice: ttsVoice.value,
+          ttsLocalVoice: ttsLocalVoice.value,
+          ttsSpeed: String(ttsSpeed.value),
+          ttsAutoRead: String(ttsAutoRead.value),
         },
       },
     })
@@ -102,7 +114,11 @@ export const useSettingsStore = defineStore('settings', () => {
     activeModel,
     systemPrompt,
     ttsEnabled,
+    ttsEngine,
     ttsVoice,
+    ttsLocalVoice,
+    ttsSpeed,
+    ttsAutoRead,
     providers,
     allModels,
     availableModels,

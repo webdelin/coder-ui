@@ -1,9 +1,19 @@
 import { sql } from 'drizzle-orm'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
+export const projects = sqliteTable('projects', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  displayName: text('display_name').notNull(),
+  path: text('path').notNull().unique(),
+  createdAt: text('created_at').notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: text('updated_at').notNull().default(sql`(CURRENT_TIMESTAMP)`),
+})
+
 export const conversations = sqliteTable('conversations', {
   id: text('id').primaryKey(),
   title: text('title').notNull().default('New Chat'),
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
   provider: text('provider').notNull(),
   model: text('model').notNull(),
   systemPrompt: text('system_prompt'),
@@ -39,6 +49,8 @@ export const appSettings = sqliteTable('app_settings', {
   value: text('value').notNull(),
 })
 
+export type Project = typeof projects.$inferSelect
+export type InsertProject = typeof projects.$inferInsert
 export type Conversation = typeof conversations.$inferSelect
 export type InsertConversation = typeof conversations.$inferInsert
 export type Message = typeof messages.$inferSelect

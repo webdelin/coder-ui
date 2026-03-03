@@ -11,6 +11,7 @@ export default defineEventHandler(async (event) => {
     provider: ProviderName
     model: string
     systemPrompt?: string
+    images?: Array<{ mediaType: string; data: string }>
     history: Array<{ role: string; content: string }>
   }>(event)
 
@@ -65,12 +66,23 @@ export default defineEventHandler(async (event) => {
   const startTime = Date.now()
   let fullText = ''
 
+  // Build images array for current message
+  const images = body.images?.map(img => ({
+    type: 'image' as const,
+    mediaType: img.mediaType,
+    data: img.data,
+  }))
+
   const chatMessages = [
     ...body.history.map(m => ({
       role: m.role as 'user' | 'assistant' | 'system',
       content: m.content,
     })),
-    { role: 'user' as const, content: body.content },
+    {
+      role: 'user' as const,
+      content: body.content,
+      ...(images?.length ? { images } : {}),
+    },
   ]
 
   const stream = provider.stream(

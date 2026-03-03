@@ -1,12 +1,21 @@
 import { defineStore } from 'pinia'
 import { useSettingsStore } from './settings'
 import { useConversationsStore } from './conversations'
+import { useProjectsStore } from './projects'
+
+export interface PendingImage {
+  id: string
+  dataUrl: string
+  mediaType: string
+  name: string
+}
 
 export interface ChatMessage {
   id: string
   conversationId: string
   role: string
   content: string
+  images?: string[] // data URLs for display
   model?: string | null
   provider?: string | null
   tokensUsed?: number | null
@@ -38,12 +47,21 @@ export const useChatStore = defineStore('chat', () => {
   const claudeSessionId = ref<string | null>(null)
 
   async function loadConversation(id: string) {
+    const projectsStore = useProjectsStore()
     const data = await $fetch<any>(`/api/conversations/${id}`)
     conversationId.value = id
     messages.value = data.messages
     streamingContent.value = ''
     error.value = null
     toolCalls.value = []
+
+    // Restore project context
+    if (data.projectId) {
+      projectsStore.setActive(data.projectId)
+      if (!projectsStore.isExpanded(data.projectId)) {
+        projectsStore.toggleExpanded(data.projectId)
+      }
+    }
 
     // Restore provider/model from conversation
     if (data.provider) {
@@ -56,7 +74,7 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function sendMessage(content: string) {
+  async function sendMessage(content: string, images?: PendingImage[]) {
     if (!conversationId.value) return
     if (isStreaming.value) return
 
@@ -65,6 +83,7 @@ export const useChatStore = defineStore('chat', () => {
       conversationId: conversationId.value,
       role: 'user',
       content,
+      images: images?.map(i => i.dataUrl),
       createdAt: new Date().toISOString(),
     })
 
@@ -83,11 +102,17 @@ export const useChatStore = defineStore('chat', () => {
 
     const isClaudeCode = settings.activeProvider === 'claude-code'
 
+    // Convert images to base64 blocks for API
+    const imageBlocks = images?.map(img => ({
+      mediaType: img.mediaType,
+      data: img.dataUrl.replace(/^data:[^;]+;base64,/, ''),
+    }))
+
     try {
       if (isClaudeCode) {
         await streamClaudeCode(content, controller)
       } else {
-        await streamRegularProvider(content, controller)
+        await streamRegularProvider(content, controller, imageBlocks)
       }
     } catch (e: any) {
       if (e.name !== 'AbortError') {
@@ -99,7 +124,7 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function streamRegularProvider(content: string, controller: AbortController) {
+  async function streamRegularProvider(content: string, controller: AbortController, images?: Array<{ mediaType: string; data: string }>) {
     const response = await fetch('/api/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -110,6 +135,7 @@ export const useChatStore = defineStore('chat', () => {
         provider: settings.activeProvider,
         model: settings.activeModel,
         systemPrompt: settings.systemPrompt || undefined,
+        images: images?.length ? images : undefined,
         history: messages.value
           .slice(0, -1)
           .slice(-20)
@@ -169,6 +195,9 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function streamClaudeCode(content: string, controller: AbortController) {
+    const projectsStore = useProjectsStore()
+    const cwd = projectsStore.activeProject?.path || undefined
+
     const response = await fetch('/api/chat/claude-code', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -180,6 +209,7 @@ export const useChatStore = defineStore('chat', () => {
         systemPrompt: settings.systemPrompt || undefined,
         permissionMode: 'acceptEdits',
         sessionId: claudeSessionId.value || undefined,
+        cwd,
       }),
     })
 

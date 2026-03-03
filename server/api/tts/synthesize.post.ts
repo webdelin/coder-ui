@@ -10,46 +10,51 @@ export default defineEventHandler(async (event) => {
     speed?: number
   }>(event)
 
-  // Load MiniMax API key from DB
+  // Load MiniMax API key from DB, fall back to env var
   const [settings] = await db
     .select()
     .from(providerSettings)
     .where(eq(providerSettings.provider, 'minimax'))
 
-  if (!settings?.apiKey || !settings?.groupId) {
+  const apiKey = settings?.apiKey || process.env.MINIMAX_API_KEY || ''
+
+  if (!apiKey) {
     throw createError({
       statusCode: 500,
-      message: 'MiniMax TTS not configured. Add MiniMax API key and Group ID in Settings.',
+      message: 'MiniMax TTS not configured. Add MiniMax API key in Settings.',
     })
   }
 
-  const resp = await fetch(
-    `https://api.minimax.io/v1/t2a_v2?GroupId=${settings.groupId}`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${settings.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: body.model ?? 'speech-2.8-hd',
-        text: body.text,
-        stream: false,
-        voice_setting: {
-          voice_id: body.voice ?? 'male-qn-qingse',
-          speed: body.speed ?? 1.0,
-          vol: 1.0,
-          pitch: 0,
-        },
-        audio_setting: {
-          sample_rate: 32000,
-          bitrate: 128000,
-          format: 'mp3',
-          channel: 1,
-        },
-      }),
+  // GroupId is optional — Coding Plan keys don't need it
+  const groupId = settings?.groupId
+  const url = groupId
+    ? `https://api.minimax.io/v1/t2a_v2?GroupId=${groupId}`
+    : 'https://api.minimax.io/v1/t2a_v2'
+
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
     },
-  )
+    body: JSON.stringify({
+      model: body.model ?? 'speech-2.8-hd',
+      text: body.text,
+      stream: false,
+      voice_setting: {
+        voice_id: body.voice ?? 'male-qn-qingse',
+        speed: body.speed ?? 1.0,
+        vol: 1.0,
+        pitch: 0,
+      },
+      audio_setting: {
+        sample_rate: 32000,
+        bitrate: 128000,
+        format: 'mp3',
+        channel: 1,
+      },
+    }),
+  })
 
   if (!resp.ok) {
     const text = await resp.text()
@@ -64,7 +69,7 @@ export default defineEventHandler(async (event) => {
   if (result.data?.audio) {
     const audioBuffer = Buffer.from(result.data.audio, 'hex')
     setHeader(event, 'Content-Type', 'audio/mpeg')
-    setHeader(event, 'Content-Length', audioBuffer.length.toString())
+    setHeader(event, 'Content-Length', audioBuffer.length)
     return audioBuffer
   }
 

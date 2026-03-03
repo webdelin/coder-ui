@@ -1,5 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'default' })
+
+const projectsStore = useProjectsStore()
 </script>
 
 <template>
@@ -10,7 +12,10 @@ definePageMeta({ layout: 'default' })
           <UIcon name="i-lucide-message-square-plus" class="size-6 text-[var(--ui-text-muted)]" />
         </div>
         <p class="text-sm text-[var(--ui-text-muted)]">
-          Select a conversation or start a new one
+          {{ projectsStore.activeProject
+            ? `Start a new conversation in ${projectsStore.activeProject.displayName}`
+            : 'Select a project or conversation to get started'
+          }}
         </p>
       </div>
     </template>

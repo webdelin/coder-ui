@@ -1,6 +1,13 @@
+export interface ImageBlock {
+  type: 'image'
+  mediaType: string
+  data: string // base64
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
+  images?: ImageBlock[]
 }
 
 export interface StreamRequest {

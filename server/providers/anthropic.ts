@@ -33,7 +33,24 @@ export const anthropicAdapter: ProviderAdapter = {
 
     const userMessages = req.messages
       .filter(m => m.role !== 'system')
-      .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+      .map((m) => {
+        // If message has images, use content blocks
+        if (m.images?.length) {
+          const content: Array<any> = m.images.map(img => ({
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: img.mediaType,
+              data: img.data,
+            },
+          }))
+          if (m.content) {
+            content.push({ type: 'text', text: m.content })
+          }
+          return { role: m.role as 'user' | 'assistant', content }
+        }
+        return { role: m.role as 'user' | 'assistant', content: m.content }
+      })
 
     const stream = client.messages.stream({
       model: req.model,
