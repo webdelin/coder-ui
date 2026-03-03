@@ -26,7 +26,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const ttsAutoRead = ref<boolean>(false)
 
   // STT settings
-  const sttEngine = ref<'browser' | 'whisper'>('browser')
+  const sttEngine = ref<'browser' | 'local' | 'whisper'>('local')
   const sttWhisperUrl = ref<string>('https://api.groq.com/openai/v1/audio/transcriptions')
   const sttWhisperApiKey = ref<string>('')
   const sttWhisperModel = ref<string>('whisper-large-v3-turbo')
@@ -88,7 +88,7 @@ export const useSettingsStore = defineStore('settings', () => {
     if (data.app.ttsLocalVoice) ttsLocalVoice.value = data.app.ttsLocalVoice
     if (data.app.ttsSpeed) ttsSpeed.value = parseFloat(data.app.ttsSpeed)
     if (data.app.ttsAutoRead) ttsAutoRead.value = data.app.ttsAutoRead === 'true'
-    if (data.app.sttEngine) sttEngine.value = data.app.sttEngine as 'browser' | 'whisper'
+    if (data.app.sttEngine) sttEngine.value = data.app.sttEngine as 'browser' | 'local' | 'whisper'
     if (data.app.sttWhisperUrl) sttWhisperUrl.value = data.app.sttWhisperUrl
     if (data.app.sttWhisperApiKey) sttWhisperApiKey.value = data.app.sttWhisperApiKey
     if (data.app.sttWhisperModel) sttWhisperModel.value = data.app.sttWhisperModel

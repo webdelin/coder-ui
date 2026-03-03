@@ -22,8 +22,9 @@ const engineOptions = [
 ]
 
 const sttEngineOptions = [
+  { label: 'Local (faster-whisper)', value: 'local' },
   { label: 'Browser (Chrome/Edge)', value: 'browser' },
-  { label: 'Whisper API (all browsers)', value: 'whisper' },
+  { label: 'Whisper API (Groq/OpenAI)', value: 'whisper' },
 ]
 
 const sttPresetOptions = [
@@ -269,9 +270,11 @@ async function clearAllConversations() {
             class="w-full"
           />
           <p class="text-xs text-[var(--ui-text-muted)] mt-1">
-            {{ settings.sttEngine === 'browser'
-              ? 'Uses browser SpeechRecognition (Chrome/Edge only). Falls back to Whisper in Firefox.'
-              : 'Records audio and transcribes via Whisper API. Works in all browsers (Chrome, Firefox, Edge).'
+            {{ settings.sttEngine === 'local'
+              ? 'Runs faster-whisper locally on the server. No API key needed. Requires: pip install faster-whisper'
+              : settings.sttEngine === 'browser'
+                ? 'Uses browser SpeechRecognition (Chrome/Edge only). Falls back to local in Firefox.'
+                : 'Records audio and transcribes via Whisper API (Groq, OpenAI). Works in all browsers.'
             }}
           </p>
         </UFormField>

@@ -84,9 +84,9 @@ function initBrowserSTT(SR: any) {
   }
 }
 
-// Determine if we should use MediaRecorder (Whisper) mode
-const useWhisper = computed(() => {
-  if (settings.sttEngine === 'whisper') return true
+// Determine if we should use MediaRecorder (server-side transcription) mode
+const useServerSTT = computed(() => {
+  if (settings.sttEngine === 'local' || settings.sttEngine === 'whisper') return true
   if (settings.sttEngine === 'browser' && !hasBrowserSTT.value) return true
   return false
 })
@@ -113,7 +113,7 @@ async function toggle() {
     return
   }
 
-  if (useWhisper.value) {
+  if (useServerSTT.value) {
     startMediaRecorder(stream)
   } else {
     // Release stream for browser SpeechRecognition
@@ -259,10 +259,10 @@ onUnmounted(() => {
       {{ errorMsg }}
     </span>
     <span
-      v-else-if="useWhisper && !isRecording && status === 'idle'"
+      v-else-if="useServerSTT && !isRecording && status === 'idle'"
       class="text-[9px] text-[var(--ui-text-dimmed)] max-w-20 text-center leading-tight"
     >
-      Whisper
+      {{ settings.sttEngine === 'local' ? 'Local' : 'Whisper' }}
     </span>
   </div>
 </template>
