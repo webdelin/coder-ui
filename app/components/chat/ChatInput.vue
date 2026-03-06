@@ -60,12 +60,12 @@ function autoResize(e: Event) {
 }
 
 // File handling
-const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 const MAX_SIZE = 20 * 1024 * 1024 // 20MB
 
 function processFiles(files: FileList | File[]) {
-  for (const file of files) {
-    if (!ACCEPTED_TYPES.includes(file.type)) continue
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
+    if (!file.type.startsWith('image/')) continue
     if (file.size > MAX_SIZE) continue
 
     const reader = new FileReader()
@@ -73,8 +73,8 @@ function processFiles(files: FileList | File[]) {
       pendingImages.value.push({
         id: crypto.randomUUID(),
         dataUrl: reader.result as string,
-        mediaType: file.type,
-        name: file.name,
+        mediaType: file.type || 'image/png',
+        name: file.name || 'screenshot.png',
       })
     }
     reader.readAsDataURL(file)
@@ -97,18 +97,32 @@ function removeImage(id: string) {
   pendingImages.value = pendingImages.value.filter(i => i.id !== id)
 }
 
-// Paste handler
+// Paste handler — uses indexed access for DataTransferItemList compatibility
 function handlePaste(e: ClipboardEvent) {
-  const items = e.clipboardData?.items
-  if (!items) return
-
   const imageFiles: File[] = []
-  for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      const file = item.getAsFile()
-      if (file) imageFiles.push(file)
+
+  // Try clipboardData.items (DataTransferItemList — not iterable in all browsers)
+  const items = e.clipboardData?.items
+  if (items) {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile()
+        if (file) imageFiles.push(file)
+      }
     }
   }
+
+  // Fallback: check clipboardData.files (FileList)
+  if (!imageFiles.length && e.clipboardData?.files?.length) {
+    for (let i = 0; i < e.clipboardData.files.length; i++) {
+      const file = e.clipboardData.files[i]
+      if (file.type.startsWith('image/')) {
+        imageFiles.push(file)
+      }
+    }
+  }
+
   if (imageFiles.length) {
     e.preventDefault()
     processFiles(imageFiles)
@@ -154,6 +168,13 @@ function onDrop(e: DragEvent) {
     processFiles(e.dataTransfer.files)
   }
 }
+
+// Expose for parent page to forward dropped files
+function handleDroppedFiles(files: FileList | File[]) {
+  processFiles(files)
+}
+
+defineExpose({ handleDroppedFiles })
 </script>
 
 <template>

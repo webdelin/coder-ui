@@ -15,18 +15,18 @@ const emit = defineEmits<{
     <div
       v-for="img in images"
       :key="img.id"
-      class="relative group size-16 rounded-lg overflow-hidden border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)]"
+      class="relative size-16 rounded-lg overflow-visible border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)]"
     >
       <img
         :src="img.dataUrl"
         :alt="img.name"
-        class="size-full object-cover"
+        class="size-full object-cover rounded-lg"
       >
       <button
-        class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity"
+        class="absolute -top-1.5 -right-1.5 size-5 flex items-center justify-center rounded-full bg-[var(--ui-bg-inverted)] text-[var(--ui-bg)] shadow-sm hover:opacity-80 transition-opacity"
         @click="emit('remove', img.id)"
       >
-        <UIcon name="i-lucide-x" class="size-4 text-white" />
+        <UIcon name="i-lucide-x" class="size-3" />
       </button>
     </div>
   </div>

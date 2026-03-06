@@ -210,7 +210,6 @@ export const useChatStore = defineStore('chat', () => {
         content,
         model: settings.activeModel,
         systemPrompt: settings.systemPrompt || undefined,
-        permissionMode: 'acceptEdits',
         sessionId: claudeSessionId.value || undefined,
         cwd,
         images: images?.length ? images : undefined,

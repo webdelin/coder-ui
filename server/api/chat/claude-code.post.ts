@@ -7,6 +7,7 @@ import { streamClaudeCode } from '../../providers/claude-code'
 import type { ClaudeCodeOptions } from '../../providers/claude-code'
 import { autoIndexMemories } from '../../utils/memory-indexer'
 import { searchMemories } from '../../utils/memory-store'
+import { getProjectSettings } from '../../utils/project-settings'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{
@@ -103,13 +104,20 @@ export default defineEventHandler(async (event) => {
 
   const effectiveSystemPrompt = (body.systemPrompt || '') + memoryContext || undefined
 
+  // Load per-project settings from .claude/settings.json
+  const cwd = body.cwd || process.cwd()
+  const projectSettings = await getProjectSettings(cwd)
+
   const opts: ClaudeCodeOptions = {
-    cwd: body.cwd || process.cwd(),
+    cwd,
     model: body.model,
-    permissionMode: body.permissionMode || 'acceptEdits',
+    permissionMode: body.permissionMode || projectSettings.permissions.defaultMode || 'acceptEdits',
     systemPrompt: effectiveSystemPrompt,
     sessionId: body.sessionId,
     maxTurns: body.maxTurns || 25,
+    ...(projectSettings.permissions.deny.length ? { disallowedTools: projectSettings.permissions.deny } : {}),
+    ...(projectSettings.permissions.additionalDirectories.length ? { additionalDirectories: projectSettings.permissions.additionalDirectories } : {}),
+    ...(Object.keys(projectSettings.env).length ? { env: projectSettings.env } : {}),
   }
 
   const stream = streamClaudeCode(prompt, opts)

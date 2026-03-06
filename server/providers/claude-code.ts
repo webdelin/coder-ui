@@ -30,6 +30,9 @@ export interface ClaudeCodeOptions {
   model?: string
   permissionMode?: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan'
   allowedTools?: string[]
+  disallowedTools?: string[]
+  additionalDirectories?: string[]
+  env?: Record<string, string>
   maxTurns?: number
   systemPrompt?: string
   sessionId?: string
@@ -55,6 +58,9 @@ export async function* streamClaudeCode(
       maxTurns: opts.maxTurns || 25,
       ...(opts.systemPrompt ? { systemPrompt: opts.systemPrompt } : {}),
       ...(opts.sessionId ? { resume: opts.sessionId } : {}),
+      ...(opts.disallowedTools?.length ? { disallowedTools: opts.disallowedTools } : {}),
+      ...(opts.additionalDirectories?.length ? { additionalDirectories: opts.additionalDirectories } : {}),
+      ...(opts.env && Object.keys(opts.env).length ? { env: opts.env } : {}),
       allowDangerouslySkipPermissions: opts.permissionMode === 'bypassPermissions',
       // Inject fetch patch to remove empty text blocks (SDK bug workaround)
       executableArgs: ['--require', join(process.cwd(), 'server/utils/patch-empty-blocks.cjs')],

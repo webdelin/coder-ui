@@ -5,20 +5,29 @@ export const EMBEDDING_DIM = 384
 
 let pipelineInstance: FeatureExtractionPipeline | null = null
 let pipelineLoading: Promise<FeatureExtractionPipeline> | null = null
+let pipelineFailed = false
 
 async function getPipeline(): Promise<FeatureExtractionPipeline> {
+  if (pipelineFailed) throw new Error('[embeddings] Pipeline permanently failed — restart server to retry')
   if (pipelineInstance) return pipelineInstance
 
   if (!pipelineLoading) {
     pipelineLoading = (async () => {
-      const { pipeline } = await import('@huggingface/transformers')
-      console.log('[embeddings] Loading model:', MODEL_NAME)
-      const pipe = await pipeline('feature-extraction', MODEL_NAME, {
-        dtype: 'fp32',
-      })
-      console.log('[embeddings] Model loaded')
-      pipelineInstance = pipe as FeatureExtractionPipeline
-      return pipelineInstance
+      try {
+        const { pipeline } = await import('@huggingface/transformers')
+        console.log('[embeddings] Loading model:', MODEL_NAME)
+        const pipe = await pipeline('feature-extraction', MODEL_NAME, {
+          dtype: 'fp32',
+        })
+        console.log('[embeddings] Model loaded')
+        pipelineInstance = pipe as FeatureExtractionPipeline
+        return pipelineInstance
+      } catch (err) {
+        pipelineFailed = true
+        pipelineLoading = null
+        console.error('[embeddings] Failed to load model — memory indexing disabled until restart:', (err as Error).message)
+        throw err
+      }
     })()
   }
 

@@ -1,13 +1,15 @@
 import { minimaxAdapter } from './minimax'
 import { zaiAdapter } from './zai'
+import { ollamaAdapter } from './ollama'
 import { fallbackModels as claudeCodeFallbackModels } from './claude-code'
 import type { ProviderAdapter, ModelDef } from './types'
 
-export type ProviderName = 'minimax' | 'zai' | 'claude-code'
+export type ProviderName = 'minimax' | 'zai' | 'ollama' | 'claude-code'
 
 const registry: Record<Exclude<ProviderName, 'claude-code'>, ProviderAdapter> = {
   minimax: minimaxAdapter,
   zai: zaiAdapter,
+  ollama: ollamaAdapter,
 }
 
 export function getProvider(name: ProviderName): ProviderAdapter {
@@ -29,14 +31,19 @@ const providerLabels: Record<ProviderName, string> = {
   'claude-code': 'Claude Code',
   minimax: 'MiniMax',
   zai: 'Z.AI (Zhipu)',
+  ollama: 'Ollama',
 }
 
 /**
  * Fetch models dynamically from provider APIs.
  * Falls back to hardcoded models if no API key or API call fails.
  */
+/** Providers that work without an API key */
+const noKeyProviders = new Set<string>(['ollama'])
+
 export async function fetchAllProviderModels(
   apiKeys: Partial<Record<ProviderName, string>>,
+  opts?: Partial<Record<ProviderName, Record<string, string>>>,
 ): Promise<ProviderModels[]> {
   const results: ProviderModels[] = []
 
@@ -50,9 +57,10 @@ export async function fetchAllProviderModels(
   // Regular providers
   for (const [name, adapter] of Object.entries(registry) as [Exclude<ProviderName, 'claude-code'>, ProviderAdapter][]) {
     const key = apiKeys[name]
-    if (key) {
+    const provOpts = opts?.[name]
+    if (key || noKeyProviders.has(name)) {
       try {
-        const models = await adapter.listModels(key)
+        const models = await adapter.listModels(key || '', provOpts)
         results.push({
           provider: name,
           providerLabel: providerLabels[name],

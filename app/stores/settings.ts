@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
 
-export type ProviderName = 'minimax' | 'zai' | 'claude-code'
+export type ProviderName = 'minimax' | 'zai' | 'ollama' | 'claude-code'
 
 export interface ProviderConfig {
   apiKey: string
   groupId: string
   enabled: boolean
+  baseUrl?: string
 }
 
 export interface ModelItem {
@@ -38,6 +39,7 @@ export const useSettingsStore = defineStore('settings', () => {
     'claude-code': { apiKey: '', groupId: '', enabled: true },
     minimax: { apiKey: '', groupId: '', enabled: false },
     zai: { apiKey: '', groupId: '', enabled: false },
+    ollama: { apiKey: '', groupId: '', enabled: false },
   })
 
   const allModels = ref<ModelItem[]>([])
@@ -85,6 +87,7 @@ export const useSettingsStore = defineStore('settings', () => {
         providers.value[key].apiKey = vals.apiKey ?? ''
         providers.value[key].groupId = vals.groupId ?? ''
         providers.value[key].enabled = vals.enabled ?? true
+        if (vals.baseUrl) providers.value[key].baseUrl = vals.baseUrl
       }
     }
 

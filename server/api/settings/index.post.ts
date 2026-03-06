@@ -7,6 +7,7 @@ export default defineEventHandler(async (event) => {
       apiKey?: string
       groupId?: string
       enabled?: boolean
+      baseUrl?: string
     }>
     app?: Record<string, string>
   }>(event)
@@ -19,6 +20,7 @@ export default defineEventHandler(async (event) => {
           provider,
           apiKey: vals.apiKey,
           groupId: vals.groupId,
+          baseUrl: vals.baseUrl,
           enabled: vals.enabled ?? true,
           updatedAt: new Date().toISOString(),
         })
@@ -27,6 +29,7 @@ export default defineEventHandler(async (event) => {
           set: {
             apiKey: vals.apiKey,
             groupId: vals.groupId,
+            baseUrl: vals.baseUrl,
             enabled: vals.enabled ?? true,
             updatedAt: new Date().toISOString(),
           },

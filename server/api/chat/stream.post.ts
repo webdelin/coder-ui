@@ -27,9 +27,10 @@ export default defineEventHandler(async (event) => {
     minimax: 'MINIMAX_API_KEY',
     zai: 'ZAI_API_KEY',
   }
+  const noKeyProviders = new Set(['ollama'])
   const apiKey = provSettings?.apiKey || process.env[envKeyMap[body.provider] ?? ''] || ''
 
-  if (!apiKey) {
+  if (!apiKey && !noKeyProviders.has(body.provider)) {
     throw createError({
       statusCode: 400,
       message: `No API key configured for ${body.provider}. Go to Settings to add one.`,
@@ -117,6 +118,10 @@ export default defineEventHandler(async (event) => {
 
   const effectiveSystemPrompt = (body.systemPrompt || '') + memoryContext || undefined
 
+  // Build provider opts (e.g. baseUrl for Ollama)
+  const providerOpts: Record<string, string> = {}
+  if (provSettings?.baseUrl) providerOpts.baseUrl = provSettings.baseUrl
+
   const stream = provider.stream(
     {
       messages: chatMessages,
@@ -124,6 +129,7 @@ export default defineEventHandler(async (event) => {
       model: body.model,
     },
     apiKey,
+    providerOpts,
   )
 
   const eventStream = createEventStream(event)

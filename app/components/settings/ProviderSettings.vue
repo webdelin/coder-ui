@@ -10,6 +10,7 @@ const showClearConfirm = ref(false)
 
 const providerList = [
   { key: 'claude-code', label: 'Claude Code (Local CLI)', icon: 'i-lucide-terminal', noApiKey: true },
+  { key: 'ollama', label: 'Ollama (Local)', icon: 'i-lucide-server', noApiKey: true, hasBaseUrl: true },
   { key: 'minimax', label: 'MiniMax', icon: 'i-lucide-sparkles', noApiKey: false },
   { key: 'zai', label: 'Z.AI (Zhipu)', icon: 'i-lucide-zap', noApiKey: false },
 ]
@@ -143,9 +144,23 @@ async function clearAllConversations() {
         </div>
 
         <div v-if="settings.providers[provider.key]?.enabled" class="space-y-3 pl-11">
-          <p v-if="provider.noApiKey" class="text-xs text-[var(--ui-text-muted)]">
+          <p v-if="provider.noApiKey && !provider.hasBaseUrl" class="text-xs text-[var(--ui-text-muted)]">
             {{ t('settings.cliNote') }}
           </p>
+
+          <template v-if="provider.hasBaseUrl">
+            <UFormField label="Base URL">
+              <UInput
+                v-model="settings.providers[provider.key]!.baseUrl"
+                placeholder="http://localhost:11434/v1"
+                class="w-full"
+                size="sm"
+              />
+            </UFormField>
+            <p class="text-xs text-[var(--ui-text-muted)]">
+              {{ t('settings.ollamaNote') }}
+            </p>
+          </template>
 
           <template v-if="!provider.noApiKey">
             <UFormField :label="t('settings.apiKeyLabel')">
